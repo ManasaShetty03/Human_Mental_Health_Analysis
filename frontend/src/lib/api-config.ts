@@ -2,10 +2,12 @@ interface ApiConfig {
   GEMINI_API_KEY: string | null;
 }
 
-let cachedConfig: ApiConfig | null = null;
+// Backend URL - Update this to your Render backend URL
+// For local development: http://localhost:3000
+// For production: https://your-render-app-name.onrender.com
+const BACKEND_URL = 'http://localhost:3000'; // TODO: Update to your Render URL
 
-// Backend URL - update this to your deployed backend URL
-const BACKEND_URL = 'https://mindcare-backend.onrender.com';
+let cachedConfig: ApiConfig | null = null;
 
 export async function getApiConfig(): Promise<ApiConfig> {
   if (cachedConfig) {
@@ -31,3 +33,6 @@ export async function getGeminiApiKey(): Promise<string | null> {
   const config = await getApiConfig();
   return config.GEMINI_API_KEY;
 }
+
+// Export backend URL for other API calls
+export { BACKEND_URL };
