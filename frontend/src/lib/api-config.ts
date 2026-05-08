@@ -2,7 +2,7 @@ interface ApiConfig {
   GEMINI_API_KEY: string | null;
 }
 
-// Backend URL - Updated to Render backend URL
+// Backend URL - Updated to Render backend URL - v2
 const BACKEND_URL = 'https://mindcare-backendd.onrender.com';
 
 let cachedConfig: ApiConfig | null = null;
