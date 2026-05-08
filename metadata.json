@@ -1,0 +1,13 @@
+{
+  "name": "MindCare",
+  "description": "Advanced multimodal mental health analysis system utilizing text, voice, and facial emotion detection for comprehensive wellness insights.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "multimodal_analysis",
+    "real_time_detection",
+    "multilingual_ui"
+  ]
+}

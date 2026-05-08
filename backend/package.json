@@ -1,0 +1,12 @@
+{
+  "name": "mindcare-backend",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "python server.py",
+    "build": "echo 'No build step needed for backend'",
+    "start": "python server.py",
+    "install": "pip install -r requirements.txt",
+    "lint": "echo 'Linting not configured for Python'"
+  }
+}

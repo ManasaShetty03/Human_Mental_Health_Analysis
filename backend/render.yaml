@@ -1,0 +1,23 @@
+services:
+  # Python Flask Backend
+  - type: web
+    name: mindcare-backend
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn server:app
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: HOST
+        value: 0.0.0.0
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: FLASK_ENV
+        value: production
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+databases:
+  # No database needed for this simple backend
+  # Add database configuration here if needed later
