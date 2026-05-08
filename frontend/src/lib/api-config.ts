@@ -13,6 +13,7 @@ export async function getApiConfig(): Promise<ApiConfig> {
   }
 
   try {
+    console.log('Fetching API config from:', `${BACKEND_URL}/api/config`);
     const response = await fetch(`${BACKEND_URL}/api/config`);
     if (!response.ok) {
       throw new Error('Failed to fetch API configuration');
