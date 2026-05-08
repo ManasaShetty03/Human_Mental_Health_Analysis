@@ -2,10 +2,8 @@ interface ApiConfig {
   GEMINI_API_KEY: string | null;
 }
 
-// Backend URL - Update this to your Render backend URL
-// For local development: http://localhost:3000
-// For production: https://your-render-app-name.onrender.com
-const BACKEND_URL = 'http://localhost:3000'; // TODO: Update to your Render URL
+// Backend URL - Updated to Render backend URL
+const BACKEND_URL = 'https://mindcare-backendd.onrender.com';
 
 let cachedConfig: ApiConfig | null = null;
 
