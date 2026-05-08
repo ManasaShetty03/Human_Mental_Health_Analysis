@@ -126,7 +126,7 @@ def start_server():
     logger.info(f"Starting MindCare Backend on {HOST}:{PORT}")
     app.run(host=HOST, port=PORT, debug=debug_mode)
 
-# Create WSGI app for Gunicorn
+# Create WSGI app for Gunicorn - this must be at module level
 app = create_app()
 
 if __name__ == "__main__":
