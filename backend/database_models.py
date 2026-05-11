@@ -35,7 +35,7 @@ class AnalysisDatabase:
                 # Use direct connection string to avoid SRV SSL issues
                 direct_uri = self.mongodb_uri.replace("mongodb+srv://", "mongodb://")
                 direct_uri = direct_uri.replace("cluster0.xeipz9f.mongodb.net", "cluster0-shard-00-00.xeipz9f.mongodb.net:27017,cluster0-shard-00-01.xeipz9f.mongodb.net:27017,cluster0-shard-00-02.xeipz9f.mongodb.net:27017")
-                direct_uri += "?ssl=true&replicaSet=atlas-xyz&authSource=admin"
+                direct_uri += "?ssl=true&replicaSet=atlas-shard-0&authSource=admin"
                 self.client = MongoClient(direct_uri)
             else:
                 self.client = MongoClient(self.mongodb_uri)
