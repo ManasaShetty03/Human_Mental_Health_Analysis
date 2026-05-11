@@ -36,16 +36,16 @@ class AnalysisDatabase:
             return False
     
     def get_database(self):
-    """Get database connection"""
-    try:
-        db = MongoClient(MONGODB_URI)
-        # Test the connection
-        db.admin.command('ping')
-        logger.info("Database connected successfully")
-        return db
-    except Exception as e:
-        logger.error(f"Database connection failed: {str(e)}")
-        return None
+        """Get database connection"""
+        try:
+            db = MongoClient(self.mongodb_uri)
+            # Test the connection
+            db.admin.command('ping')
+            logger.info("Database connected successfully")
+            return db
+        except Exception as e:
+            logger.error(f"Database connection failed: {str(e)}")
+            return None
     
     def is_connected(self) -> bool:
         """Check if database is connected"""
