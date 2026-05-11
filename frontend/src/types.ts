@@ -47,3 +47,37 @@ export interface MultimodalAnalysis {
     conflict_message?: string;
   };
 }
+
+// History and Analysis types
+export interface Analysis {
+  _id: string;
+  timestamp: string;
+  analysis_type: string;
+  modality: string;
+  emotion: string;
+  confidence: number;
+  mental_state: string;
+  severity: string;
+  suggestions: string[];
+  is_backup: boolean;
+  model_used: string;
+  language: string;
+  processing_time: number;
+  results?: any;
+  metadata?: any;
+}
+
+export interface UserStatistics {
+  total_analyses: number;
+  emotion_distribution: Record<string, number>;
+  modality_distribution: Record<string, number>;
+  average_confidence: number;
+  severity_distribution: Record<string, number>;
+  recent_activity: Array<{
+    id: string;
+    timestamp: string;
+    emotion: string;
+    modality: string;
+    confidence: number;
+  }>;
+}

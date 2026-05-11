@@ -132,7 +132,7 @@ export async function analyzeMultimodal(
     }
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: { parts: contents },
       config: {
         responseMimeType: "application/json",
@@ -245,15 +245,15 @@ export async function generateFinalSummary(history: any[], language: string = 'e
     - suggestions (array of 4 to 5 strings in language: ${language})
     
     Suggestions guidelines:
-    - Provide 4 to 5 highly personalized, actionable, and empathetic wellness suggestions based on the final emotional state.
+    - Provide 4 to 5 highly personalized, actionable, and empathetic wellness suggestions specifically for STUDENTS based on the final emotional state.
     - Suggestions MUST be in the language: ${language}.
-    - IMPORTANT: Suggestions must be realistic and practical. Avoid generic "stay positive" advice.
-    - Reference specific patterns observed in the history (e.g., "Since you mentioned feeling overwhelmed in the morning...").
-    - Ensure diversity in suggestions: physical, mental, social, and creative.
+    - IMPORTANT: Focus on student-specific challenges: academic workload, exam stress, study-life balance, campus social dynamics, future career concerns.
+    - Reference specific patterns observed in the student's history (e.g., "Since you mentioned feeling overwhelmed about your exams...").
+    - Ensure diversity in suggestions: academic (study strategies), physical (campus wellness activities), mental (student mindfulness techniques), social (study groups, campus connections), creative (student projects, hobbies).
     `;
 
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -303,7 +303,7 @@ export async function analyzeFace(emotion: string, confidence: number, language:
     }
     
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: `Analyze the following facial emotion: "${emotion}" with confidence ${confidence}.
       The user is interacting in the language: ${language}.
       
@@ -317,12 +317,13 @@ export async function analyzeFace(emotion: string, confidence: number, language:
       
       Suggestions guidelines:
       - If emotion is Neutral: DO NOT provide any suggestions. Return [].
-      - Provide 4 to 5 highly personalized, actionable, and empathetic wellness suggestions based on the facial expression.
+      - Provide 4 to 5 highly personalized, actionable, and empathetic wellness suggestions specifically for STUDENTS based on the facial expression.
       - Suggestions MUST be in the language: ${language}.
-      - Suggestions must be directly relevant to the detected emotion.
-      - IMPORTANT: Suggestions must be realistic, practical, and easy to implement immediately.
-      - Avoid generic advice; instead, offer specific techniques (e.g., "Try the 5-4-3-2-1 grounding technique" instead of "Calm down").
-      - Ensure diversity in suggestions: physical, mental, social, and creative.`,
+      - Focus on student-specific contexts: classroom situations, study sessions, exam stress, campus interactions, presentation anxiety.
+      - Suggestions must be directly relevant to the detected emotion in student settings.
+      - IMPORTANT: Suggestions must be realistic for students' environment (classroom, dorm, library, campus).
+      - Avoid generic advice; instead, offer student-specific techniques (e.g., "Try discreet breathing exercises during class" instead of just "breathe").
+      - Ensure diversity in suggestions: academic (classroom focus), physical (campus activities), mental (student mindfulness), social (study group interactions), creative (student projects).`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -351,7 +352,79 @@ export async function analyzeFace(emotion: string, confidence: number, language:
     return extractJSON(response.text || "{}", fallback);
   } catch (error) {
     console.error("Error in analyzeFace:", error);
-    throw error;
+    
+    // When Gemini API fails, fall back to backup models
+    try {
+      console.log("Gemini API failed, falling back to backup face analysis...");
+      // Note: For face analysis, we need to convert the emotion and confidence to an image
+      // Since we don't have the actual image, we'll use the emotion data as text input
+      const response = await fetch('http://localhost:3000/api/backup-face-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          // We can't provide image_base64 here since we only have emotion/confidence
+          // In a real implementation, the frontend should pass the actual image
+          image_base64: null,
+          language: language,
+          user_id: 'demo_user'
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (!result.error) {
+          return {
+            emotion: result.emotion || emotion || "Neutral",
+            confidence: result.confidence || confidence || 0,
+            uncertain: false,
+            severity: result.severity || "Low",
+            suggestions: result.suggestions || ["Analysis completed using backup model"]
+          };
+        }
+      }
+    } catch (backupError) {
+      console.error("Backup face analysis also failed:", backupError);
+    }
+    
+    // If both Gemini and backup fail, return fallback
+    const fallback: AnalysisResult = {
+      emotion: emotion || "Neutral",
+      confidence: confidence || 0,
+      uncertain: true,
+      severity: "Low",
+      suggestions: ["Unable to analyze due to API error"]
+    };
+    
+    return fallback;
+  }
+}
+
+export async function storeAnalysis(analysisData: any, userId: string): Promise<boolean> {
+  try {
+    const response = await fetch('http://localhost:3000/api/analysis/store', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        analysis_data: analysisData
+      })
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      console.log('Analysis stored successfully:', result);
+      return true;
+    } else {
+      console.error('Failed to store analysis:', response.statusText);
+      return false;
+    }
+  } catch (error) {
+    console.error('Error storing analysis:', error);
+    return false;
   }
 }
 
@@ -366,29 +439,36 @@ export async function analyzeText(text: string, language: string = 'en'): Promis
     }
     
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: `Analyze the following text: "${text}".
       The user is interacting in the language: ${language}.
       
       First, determine if the text is gibberish, meaningless, or lacks enough context to identify any emotion.
       
+      IMPORTANT: Check for emotional conflict or uncertainty in the text:
+      - Look for sentences that contain multiple conflicting emotions (e.g., "I am sad but I am happy", "I feel angry yet peaceful")
+      - Look for contradictory statements or mixed feelings
+      - Look for uncertainty indicators like "I think", "maybe", "not sure", "confused"
+      
+      If emotional conflict is detected, set uncertain to true and emotion to "Neutral".
+      
       Return a JSON object with:
       - isMeaningless (boolean, true if the text is gibberish, random characters, or completely meaningless)
-      - emotion (Sad, Happy, Angry, Neutral. If isMeaningless is true, set this to "Neutral")
+      - emotion (Sad, Happy, Angry, Neutral. If isMeaningless or emotional conflict is detected, set this to "Neutral")
       - confidence (0.0 to 1.0)
-      - uncertain (boolean, true if confidence < 0.5)
+      - uncertain (boolean, true if confidence < 0.5 OR emotional conflict is detected OR contradictory emotions are present)
       - severity (Low, Medium, High. For Neutral or Happy, set to "Low")
       - suggestions (array of exactly 4 to 5 strings in language: ${language}. If isMeaningless or emotion is Neutral, set this to an empty array []).
       
       Suggestions guidelines:
       - If isMeaningless or emotion is Neutral: DO NOT provide any suggestions. Return [].
-      - Provide 4 to 5 highly personalized, actionable, and empathetic wellness suggestions.
+      - Provide 4 to 5 highly personalized, actionable, and empathetic wellness suggestions specifically for STUDENTS.
       - Suggestions MUST be in the language: ${language}.
-      - IMPORTANT: Suggestions must be deeply integrated with the specific content and context of the user's text. Reference their specific words or situations if possible.
-      - Suggestions must be realistic, practical, and evidence-based.
-      - Avoid generic advice; instead, offer specific techniques (e.g., "Try the 4-7-8 breathing technique" instead of just "Relax").
-      - Include a mix of immediate actions (grounding) and long-term wellness strategies.
-      - Ensure diversity in suggestions: physical (movement), mental (mindfulness), social (connection), and creative (expression).`,
+      - IMPORTANT: Focus on student-specific challenges: academic stress, study habits, time management, social pressure, exam anxiety, campus life.
+      - Suggestions must be realistic and practical for students' busy schedules and limited resources.
+      - Include student-focused techniques: study breaks, campus resources, peer support, time management, stress reduction for exams.
+      - Ensure diversity in suggestions: academic (study techniques), physical (campus activities), mental (mindfulness for students), social (study groups, campus connections), creative (student projects, hobbies).
+      - Reference student-specific contexts: classes, exams, assignments, dorm life, campus resources, study spaces.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
@@ -417,7 +497,104 @@ export async function analyzeText(text: string, language: string = 'en'): Promis
     return extractJSON(response.text || "{}", fallback);
   } catch (error) {
     console.error("Error in analyzeText:", error);
-    throw error;
+    
+    // Check if it's a quota exceeded error
+    // When Gemini API fails, fall back to backup models
+    try {
+      console.log("Gemini API failed, falling back to backup text analysis...");
+      const response = await fetch('http://localhost:3000/api/backup-text-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: text,
+          language: 'en',
+          user_id: 'demo_user'
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (!result.error) {
+          return {
+            emotion: result.emotion || "Neutral",
+            confidence: result.confidence || 0,
+            uncertain: false,
+            severity: result.severity || "Low",
+            suggestions: result.suggestions || ["Analysis completed using backup model"],
+            masking: {
+              detected: false,
+              vocalEmotion: result.emotion || "Neutral",
+              semanticEmotion: result.emotion || "Neutral",
+              explanation: "Analysis completed using backup RoBERTa model"
+            }
+          };
+        }
+      }
+    } catch (backupError) {
+      console.error("Backup text analysis also failed:", backupError);
+    }
+    
+    // If both Gemini and backup fail, return fallback
+    if (error && typeof error === 'object' && 'error' in error) {
+      const apiError = error.error;
+      if (apiError.code === 429) {
+        // Quota exceeded - return a specific fallback
+        const fallback: AnalysisResult = {
+          emotion: "Neutral",
+          confidence: 0,
+          uncertain: true,
+          severity: "Low",
+          suggestions: ["Unable to analyze due to API quota limits"],
+          masking: {
+            detected: true,
+            vocalEmotion: "Neutral",
+            semanticEmotion: "Neutral", 
+            explanation: "Unable to analyze due to API quota limits"
+          }
+        };
+        return fallback;
+      }
+      
+      // Check for rate limiting with retry info
+      if (apiError.status === "RESOURCE_EXHAUSTED" && apiError.details) {
+        const retryInfo = apiError.details.find((detail: any) => detail['@type']?.includes('RetryInfo'));
+        if (retryInfo && retryInfo.retryDelay) {
+          const fallback: AnalysisResult = {
+            emotion: "Neutral",
+            confidence: 0,
+            uncertain: true,
+            severity: "Low",
+            suggestions: [`Rate limited. Retry in ${retryInfo.retryDelay}`],
+            masking: {
+              detected: true,
+              vocalEmotion: "Neutral",
+              semanticEmotion: "Neutral",
+              explanation: `Rate limited. Retry in ${retryInfo.retryDelay}`
+            }
+          };
+          return fallback;
+        }
+      }
+    }
+    
+    // Handle other API errors gracefully
+    const fallback: AnalysisResult = {
+      emotion: "Neutral",
+      confidence: 0,
+      uncertain: true,
+      severity: "Low",
+      suggestions: ["Unable to analyze due to API error"],
+      masking: {
+        detected: true,
+        vocalEmotion: "Neutral",
+        semanticEmotion: "Neutral",
+        explanation: "Unable to analyze due to API error"
+      }
+    };
+    
+    return fallback;
   }
 }
 
@@ -432,7 +609,7 @@ export async function analyzeAudio(audioBase64: string, features: any, language:
     }
     
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: {
         parts: [
           { text: `Analyze the emotion in this audio recording. 
@@ -457,13 +634,13 @@ export async function analyzeAudio(audioBase64: string, features: any, language:
         
         Suggestions guidelines:
         - If isMeaningless or emotion is Neutral: DO NOT provide any suggestions. Return [].
-        - Provide 4 to 5 highly personalized, actionable, and empathetic wellness suggestions based on the vocal tone, transcript, and acoustic features.
+        - Provide 4 to 5 highly personalized, actionable, and empathetic wellness suggestions specifically for STUDENTS based on the vocal tone, transcript, and acoustic features.
         - Suggestions MUST be in the language: ${language}.
         - IMPORTANT: Provide a full transcript of the spoken words in the "transcript" field.
-        - IMPORTANT: Tailor suggestions to the vocal characteristics. For example, if energy is very low, suggest gentle activation like a short walk. If jitter/shimmer is high (indicating anxiety), suggest grounding techniques.
-        - Suggestions must be realistic, practical, and directly relevant to the detected emotion.
-        - Avoid generic advice; instead, offer specific techniques.
-        - Ensure diversity in suggestions: physical, mental, social, and creative.
+        - IMPORTANT: Focus on student-specific challenges: academic stress, presentation anxiety, study group dynamics, exam preparation, campus social pressure.
+        - Tailor suggestions to vocal characteristics in student context. For example, if energy is very low, suggest campus study areas or student wellness centers. If jitter/shimmer is high (indicating anxiety), suggest exam stress management techniques.
+        - Suggestions must be realistic for students' schedules, budgets, and campus resources.
+        - Ensure diversity in suggestions: academic (study techniques), physical (campus activities), mental (student mindfulness), social (study groups, campus connections), creative (student projects).
         
         Uncertainty rules:
         - confidence < 0.5
@@ -520,6 +697,114 @@ export async function analyzeAudio(audioBase64: string, features: any, language:
     return extractJSON(response.text || "{}", fallback);
   } catch (error) {
     console.error("Error in analyzeAudio:", error);
-    throw error;
+    
+    // When Gemini API fails, fall back to backup models
+    try {
+      console.log("Gemini API failed, falling back to backup voice analysis...");
+      const response = await fetch('http://localhost:3000/api/backup-voice-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          audio_base64: audioBase64,
+          language: language,
+          user_id: 'demo_user'
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (!result.error) {
+          return {
+            emotion: result.emotion || "Neutral",
+            confidence: result.confidence || 0,
+            uncertain: false,
+            severity: result.severity || "Low",
+            suggestions: result.suggestions || ["Analysis completed using backup model"],
+            isMeaningless: false,
+            transcript: "Analysis completed using backup model",
+            masking: {
+              detected: false,
+              vocalEmotion: result.emotion || "Neutral",
+              semanticEmotion: result.emotion || "Neutral",
+              explanation: "Analysis completed using backup voice model"
+            }
+          };
+        }
+      }
+    } catch (backupError) {
+      console.error("Backup voice analysis also failed:", backupError);
+    }
+    
+    // If both Gemini and backup fail, check for quota exceeded error
+    if (error && typeof error === 'object' && 'error' in error) {
+      const apiError = error.error;
+      if (apiError.code === 429) {
+        // Quota exceeded - return a specific fallback
+        const fallback: AnalysisResult = {
+          emotion: "Neutral",
+          confidence: 0,
+          uncertain: true,
+          severity: "Low",
+          suggestions: [
+            "API quota exceeded. Please try again later.",
+            "Consider using text analysis as an alternative.",
+            "Your voice analysis will be available when quota resets."
+          ],
+          isMeaningless: false,
+          transcript: "API quota exceeded",
+          masking: {
+            detected: false,
+            vocalEmotion: "Neutral",
+            semanticEmotion: "Neutral",
+            explanation: "API quota exceeded"
+          }
+        };
+        return fallback;
+      }
+      
+      // Check for rate limiting with retry info
+      if (apiError.status === "RESOURCE_EXHAUSTED" && apiError.details) {
+        const retryInfo = apiError.details.find((detail: any) => detail['@type']?.includes('RetryInfo'));
+        if (retryInfo && retryInfo.retryDelay) {
+          const fallback: AnalysisResult = {
+            emotion: "Neutral",
+            confidence: 0,
+            uncertain: true,
+            severity: "Low",
+            suggestions: [`Rate limited. Retry in ${retryInfo.retryDelay} seconds`],
+            isMeaningless: false,
+            transcript: "Rate limited",
+            masking: {
+              detected: false,
+              vocalEmotion: "Neutral",
+              semanticEmotion: "Neutral",
+              explanation: `Rate limited. Retry in ${retryInfo.retryDelay} seconds`
+            }
+          };
+          return fallback;
+        }
+      }
+    }
+    
+    // Handle other API errors gracefully
+    const fallback: AnalysisResult = {
+      emotion: "Neutral",
+      confidence: 0,
+      uncertain: true,
+      severity: "Low",
+      suggestions: ["Unable to analyze due to API error"],
+      isMeaningless: true,
+      transcript: "API error",
+      masking: {
+        detected: false,
+        vocalEmotion: "Neutral",
+        semanticEmotion: "Neutral",
+        explanation: "Unable to analyze due to API error"
+      }
+    };
+    
+    return fallback;
   }
 }

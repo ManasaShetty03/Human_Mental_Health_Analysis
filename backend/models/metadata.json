@@ -1,0 +1,11 @@
+{
+  "architecture": "CNN + BiLSTM",
+  "feature_count": 134,
+  "emotions": [
+    "Angry",
+    "Happy",
+    "Neutral",
+    "Sad"
+  ],
+  "training_date": "2026-05-11T10:57:20.420035"
+}

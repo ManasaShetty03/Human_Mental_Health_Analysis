@@ -1,0 +1,14 @@
+{
+  "model_type": "RoBERTa Emotion Classifier",
+  "model_name": "j-hartmann/emotion-english-distilroberta-base",
+  "provider": "HuggingFace",
+  "training_required": false,
+  "real_time_prediction": true,
+  "gpu_support": false,
+  "supported_emotions": [
+    "Angry",
+    "Sad",
+    "Neutral",
+    "Happy"
+  ]
+}

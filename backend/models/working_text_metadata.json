@@ -1,0 +1,18 @@
+{
+  "model_types": [
+    "RandomForest",
+    "SVM",
+    "MLP",
+    "NaiveBayes"
+  ],
+  "best_model": null,
+  "feature_type": "TF-IDF",
+  "max_features": 3000,
+  "emotions": [
+    "Angry",
+    "Happy",
+    "Sad",
+    "neutral"
+  ],
+  "training_date": "2026-05-11T11:11:47.227370"
+}

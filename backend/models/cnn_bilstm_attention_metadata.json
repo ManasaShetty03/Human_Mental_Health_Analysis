@@ -1,0 +1,19 @@
+{
+  "model_type": "cnn_bilstm_attention",
+  "architecture": "CNN + BiLSTM + Attention",
+  "input_shape": [
+    216,
+    184
+  ],
+  "num_classes": 4,
+  "emotions": [
+    "Angry",
+    "Happy",
+    "Neutral",
+    "Sad"
+  ],
+  "training_date": "2026-05-11T10:38:16.893625",
+  "accuracy": 0.4512534737586975,
+  "loss": 2.455092191696167,
+  "feature_count": 184
+}

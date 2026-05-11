@@ -1,0 +1,19 @@
+{
+  "model_type": "effective_cnn_lstm",
+  "architecture": "CNN + BiLSTM",
+  "input_shape": [
+    128,
+    112
+  ],
+  "num_classes": 4,
+  "emotions": [
+    "Angry",
+    "Happy",
+    "Neutral",
+    "Sad"
+  ],
+  "training_date": "2026-05-11T10:53:36.564822",
+  "accuracy": 0.5330073237419128,
+  "loss": 1.3547595739364624,
+  "feature_count": 112
+}

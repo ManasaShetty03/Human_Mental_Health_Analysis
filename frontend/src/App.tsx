@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { UserProvider, useUser } from './contexts/UserContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Brain, 
@@ -18,7 +19,9 @@ import {
   Library,
   Video,
   Wind,
-  Play
+  Play,
+  History,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -44,8 +47,8 @@ import {
   analyzeAudio, 
   analyzeMultimodal, 
   generateFinalSummary, 
-  AnalysisResult 
-} from '@/src/lib/gemini';
+  storeAnalysis
+} from './lib/gemini';
 import { 
   Emotion, 
   ModalityResult, 
@@ -53,10 +56,16 @@ import {
   FinalSummary, 
   MultimodalAnalysis 
 } from './types';
+import LandingPage from './pages/LandingPage';
+import LanguageSelectionPage from './pages/LanguageSelectionPage';
+import SignupPage from './pages/SignupPage';
+import HistorySimple from './pages/HistorySimple';
+import FeaturesPage from './pages/FeaturesPage';
+import ProfilePage from './pages/ProfilePage';
 import './i18n';
 
 // --- Types ---
-type Page = 'landing' | 'auth' | 'language' | 'analysis' | 'summary';
+type Page = 'landing' | 'auth' | 'language' | 'analysis' | 'summary' | 'history' | 'features' | 'profile';
 type AuthMode = 'login' | 'signup';
 
 // --- Audio Utilities ---
@@ -112,7 +121,7 @@ const Atmosphere = () => (
   </div>
 );
 
-const GlassCard = ({ children, className = "", onClick }: { children: React.ReactNode, className?: string, onClick?: () => void, key?: React.Key }) => (
+export const GlassCard = ({ children, className = "", onClick }: { children: React.ReactNode, className?: string, onClick?: () => void, key?: React.Key }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     whileInView={{ opacity: 1, y: 0 }}
@@ -127,7 +136,70 @@ const GlassCard = ({ children, className = "", onClick }: { children: React.Reac
 );
 
 export default function App() {
+  return (
+    <UserProvider>
+      <AppContent />
+    </UserProvider>
+  );
+}
+
+const getEmotionIcon = (emotion: string) => {
+  switch (emotion.toLowerCase()) {
+    case 'happy':
+    case 'joy':
+      return <Heart className="w-6 h-6" />;
+    case 'sad':
+      return <Activity className="w-6 h-6" />;
+    case 'angry':
+      return <AlertTriangle className="w-6 h-6" />;
+    default:
+      return <Brain className="w-6 h-6" />;
+  }
+};
+
+const getEmotionGradient = (emotion: string) => {
+  switch (emotion.toLowerCase()) {
+    case 'happy':
+    case 'joy':
+      return 'from-yellow-400 to-orange-500';
+    case 'sad':
+      return 'from-blue-400 to-blue-600';
+    case 'angry':
+      return 'from-red-400 to-red-600';
+    default:
+      return 'from-gray-400 to-gray-600';
+  }
+};
+
+const getSeverityColor = (severity: string) => {
+  switch (severity.toLowerCase()) {
+    case 'low':
+      return 'bg-green-900/50 text-green-300 border-green-700/50';
+    case 'medium':
+      return 'bg-yellow-900/50 text-yellow-300 border-yellow-700/50';
+    case 'high':
+      return 'bg-red-900/50 text-red-300 border-red-700/50';
+    default:
+      return 'bg-gray-900/50 text-gray-300 border-gray-700/50';
+  }
+};
+
+const getModalityIcon = (modality: string) => {
+  switch (modality.toLowerCase()) {
+    case 'text':
+      return <MessageSquare className="w-5 h-5" />;
+    case 'voice':
+      return <Mic className="w-5 h-5" />;
+    case 'multimodal':
+      return <Brain className="w-5 h-5" />;
+    default:
+      return <Activity className="w-5 h-5" />;
+  }
+};
+
+function AppContent() {
   const { t, i18n } = useTranslation();
+  const { user } = useUser();
 
   const resourceData = {
     books: [
@@ -195,6 +267,7 @@ export default function App() {
   const audioChunksRef = useRef<Blob[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyzerRef = useRef<any>(null);
+  const audioFeaturesRef = useRef<any>(null);
 
   // Face Analysis State (Restored for Full Assessment)
   const [faceEmotion, setFaceEmotion] = useState<ModalityResult | null>(null);
@@ -382,6 +455,38 @@ export default function App() {
       
       setMultimodalResult(result);
       
+      // Store analysis in database
+      const userId = user?.email || user?.id || 'anonymous';
+      console.log('Storing multimodal analysis with userId:', userId);
+      const analysisData = {
+        analysis_type: 'multimodal',
+        modality: 'multimodal',
+        results: {
+          face_result: faceResult,
+          face_image: faceImage,
+          audio_base64: recordedAudio.base64,
+          audio_features: recordedAudio.features,
+          transcript: transcript || textInput,
+          emotion: result.emotion,
+          confidence: result.confidence,
+          uncertain: result.uncertain,
+          severity: result.severity,
+          suggestions: result.suggestions
+        },
+        confidence: result.confidence,
+        emotion: result.emotion,
+        severity: result.severity,
+        suggestions: result.suggestions,
+        is_backup: false,
+        model_used: 'multimodal',
+        language: selectedLanguage,
+        metadata: {
+          timestamp: new Date().toISOString()
+        }
+      };
+      
+      await storeAnalysis(analysisData, userId);
+      
       // Trigger breathing exercise if severity is high
       if (result.severity === 'High') {
         const exercise = resourceData.breathing.find(b => b.title === "4-7-8 Breathing");
@@ -420,6 +525,34 @@ export default function App() {
       const result = await analyzeText(textInput, selectedLanguage);
       setAnalysisResult(result);
       
+      // Store analysis in database
+      const userId = user?.email || user?.id || 'anonymous';
+      console.log('Storing text analysis with userId:', userId);
+      const analysisData = {
+        analysis_type: 'text',
+        modality: 'text',
+        results: {
+          text: textInput,
+          emotion: result.emotion,
+          confidence: result.confidence,
+          uncertain: result.uncertain,
+          severity: result.severity,
+          suggestions: result.suggestions
+        },
+        confidence: result.confidence,
+        emotion: result.emotion,
+        severity: result.severity,
+        suggestions: result.suggestions,
+        is_backup: false,
+        model_used: 'gemini',
+        language: selectedLanguage,
+        metadata: {
+          timestamp: new Date().toISOString()
+        }
+      };
+      
+      await storeAnalysis(analysisData, userId);
+      
       if (result.severity === 'High') {
         const exercise = resourceData.breathing.find(b => b.title === "4-7-8 Breathing");
         if (exercise) {
@@ -446,6 +579,35 @@ export default function App() {
         setTranscript(result.transcript);
       }
       
+      // Store analysis in database
+      const userId = user?.email || user?.id || 'anonymous';
+      const analysisData = {
+        analysis_type: 'voice',
+        modality: 'voice',
+        results: {
+          audio_base64: recordedAudio.base64,
+          features: recordedAudio.features,
+          transcript: result.transcript,
+          emotion: result.emotion,
+          confidence: result.confidence,
+          uncertain: result.uncertain,
+          severity: result.severity,
+          suggestions: result.suggestions
+        },
+        confidence: result.confidence,
+        emotion: result.emotion,
+        severity: result.severity,
+        suggestions: result.suggestions,
+        is_backup: false,
+        model_used: 'voice_model',
+        language: selectedLanguage,
+        metadata: {
+          timestamp: new Date().toISOString()
+        }
+      };
+      
+      await storeAnalysis(analysisData, userId);
+      
       if (result.severity === 'High') {
         const exercise = resourceData.breathing.find(b => b.title === "4-7-8 Breathing");
         if (exercise) {
@@ -456,7 +618,17 @@ export default function App() {
         }
       }
     } catch (err) {
-      toast.error("Voice analysis failed");
+      // Check if it's an API error and provide specific feedback
+      if (err && typeof err === 'object' && 'error' in err) {
+        const apiError = err.error;
+        if (apiError.code === 503) {
+          toast.error("AI service temporarily unavailable. Please try again in a moment.");
+        } else {
+          toast.error("Voice analysis failed. Please try again.");
+        }
+      } else {
+        toast.error("Voice analysis failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -539,6 +711,7 @@ export default function App() {
         featureExtractors: ['mfcc', 'rms', 'zcr'],
         callback: (features) => {
           setAudioFeatures(features);
+          audioFeaturesRef.current = features;
           
           // Collect pitch
           if (audioContextRef.current) {
@@ -547,8 +720,20 @@ export default function App() {
             if (analyserNode) {
               analyserNode.getFloatTimeDomainData(input);
               const [pitch, clarity] = detector.findPitch(input, audioContextRef.current.sampleRate);
-              if (clarity > 0.8) {
-                pitchesRef.current.push(pitch);
+              
+              // More lenient pitch detection with debugging
+              if (pitch > 0 && clarity > 0.3) { // Much lower threshold
+                // Filter out unrealistic frequencies but be more permissive
+                if (pitch > 80 && pitch < 800) {
+                  pitchesRef.current.push(pitch);
+                }
+              }
+              
+              // Fallback: if we're not getting enough pitches, use a simpler approach
+              if (pitchesRef.current.length < 10 && features.rms && features.rms > 0.01) {
+                // Estimate pitch based on energy - very rough approximation
+                const estimatedPitch = 150 + (features.rms * 200); // Rough estimate
+                pitchesRef.current.push(estimatedPitch);
               }
             }
           }
@@ -572,11 +757,15 @@ export default function App() {
           const shimmer = calculateShimmer(amplitudesRef.current);
           const avgPitch = pitchesRef.current.length > 0 ? pitchesRef.current.reduce((a, b) => a + b, 0) / pitchesRef.current.length : 0;
           
+          const avgAmplitude = amplitudesRef.current.length > 0 ? amplitudesRef.current.reduce((a, b) => a + b, 0) / amplitudesRef.current.length : 0;
+          const energy = avgAmplitude; // Energy is essentially the RMS amplitude
+          
           const finalFeatures = {
-            ...audioFeatures,
+            ...audioFeaturesRef.current,
             jitter,
             shimmer,
             pitch: avgPitch,
+            energy,
             transcript: transcript
           };
           
@@ -602,422 +791,127 @@ export default function App() {
   // --- Render Helpers ---
 
   const renderAuth = () => (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12 relative overflow-hidden">
-      <div className="absolute top-8 left-8 z-20">
-        <Button 
-          variant="ghost" 
-          className="rounded-full text-dark-blue hover:text-dark-blue/90 hover:bg-blue-50 h-10 px-5 font-bold uppercase tracking-widest text-[10px] transition-all bg-blue-50/50" 
-          onClick={() => setPage('landing')}
-        >
-          <ChevronLeft size={16} className="mr-1" /> {t('back')}
-        </Button>
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-md relative z-10"
-      >
-        <GlassCard className="p-10 bg-white/60 backdrop-blur-3xl shadow-2xl border-none space-y-8">
-          <div className="text-center space-y-2">
-            <h2 className="text-4xl font-serif text-[#1a3a6d]">
-              {authMode === 'login' ? 'Welcome Back' : 'Join MindCare'}
-            </h2>
-            <p className="text-[#2d5da1] opacity-70">
-              {authMode === 'login' 
-                ? 'Sign in to access your emotional wellness dashboard' 
-                : 'Create an account to track your wellness journey'}
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input 
-                id="username" 
-                placeholder="JohnDoe" 
-                className="rounded-xl h-12 bg-white/50 border-blue-100"
-                value={authForm.username}
-                onChange={(e) => setAuthForm({...authForm, username: e.target.value})}
-              />
-            </div>
-
-            {authMode === 'signup' && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="space-y-2"
-              >
-                <Label htmlFor="email">Email</Label>
-                <Input 
-                  id="email" 
-                  type="email" 
-                  placeholder="john@example.com" 
-                  className="rounded-xl h-12 bg-white/50 border-blue-100"
-                  value={authForm.email}
-                  onChange={(e) => setAuthForm({...authForm, email: e.target.value})}
-                />
-              </motion.div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                className="rounded-xl h-12 bg-white/50 border-blue-100"
-                value={authForm.password}
-                onChange={(e) => setAuthForm({...authForm, password: e.target.value})}
-              />
-            </div>
-
-            {authMode === 'signup' && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="space-y-2"
-              >
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input 
-                  id="confirmPassword" 
-                  type="password" 
-                  className="rounded-xl h-12 bg-white/50 border-blue-100"
-                  value={authForm.confirmPassword}
-                  onChange={(e) => setAuthForm({...authForm, confirmPassword: e.target.value})}
-                />
-              </motion.div>
-            )}
-          </div>
-
-          <Button 
-            className="w-full h-12 rounded-xl bg-dark-blue text-white font-bold text-lg shadow-lg hover:bg-dark-blue/90 transition-all"
-            onClick={() => {
-              if (!authForm.username || !authForm.password) {
-                toast.error("Please fill in all fields");
-                return;
-              }
-              if (authMode === 'signup' && authForm.password !== authForm.confirmPassword) {
-                toast.error("Passwords do not match");
-                return;
-              }
-              setLoading(true);
-              setTimeout(() => {
-                setLoading(false);
-                toast.success(authMode === 'login' ? 'Welcome back!' : 'Account created successfully!');
-                setPage('language');
-              }, 1000);
-            }}
-            disabled={loading}
-          >
-            {loading ? 'Processing...' : (authMode === 'login' ? 'Sign In' : 'Create Account')}
-          </Button>
-
-          <div className="text-center text-sm">
-            <span className="text-[#2d5da1] opacity-60">
-              {authMode === 'login' ? "Don't have an account? " : "Already have an account? "}
-            </span>
-            <button 
-              className="text-[#1a3a6d] font-bold hover:underline"
-              onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
-            >
-              {authMode === 'login' ? 'Sign Up' : 'Log In'}
-            </button>
-          </div>
-        </GlassCard>
-      </motion.div>
-    </div>
+    <SignupPage setPage={setPage} />
   );
 
   const renderLanding = () => (
-    <div className="min-h-screen bg-[#dce9f9] flex flex-col items-center px-3 sm:px-4 md:px-6">
-      <div className="min-h-screen w-full flex flex-col items-center justify-center py-8 sm:py-12 md:py-24">
-        <div className="max-w-4xl w-full text-center space-y-6 sm:space-y-8 md:space-y-12">
-        {/* Main Title */}
-        <motion.div
-           initial={{ opacity: 0, y: -20 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ duration: 1 }}
-        >
-          <h1 className="text-[16vw] sm:text-[12vw] md:text-[8vw] lg:text-[6vw] font-serif tracking-tight text-[#1a3a6d] leading-none mb-3 sm:mb-4">
-            MindCare
-          </h1>
-        </motion.div>
-
-        {/* Description */}
-        <motion.p 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5, duration: 1 }}
-          className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-[#2d5da1] max-w-2xl sm:max-w-3xl mx-auto font-light leading-snug px-2 sm:px-4"
-        >
-          Your personal student emotional wellness companion. Analyze your emotions through text, voice, and multimodal analysis for personalized wellness support.
-        </motion.p>
-
-        {/* Actions */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1, duration: 1 }}
-          className="flex flex-col items-center gap-4 sm:gap-6 w-full max-w-sm mx-auto"
-        >
-          <Button 
-            variant="outline"
-            className="w-full sm:w-64 h-12 sm:h-14 rounded-2xl border-2 border-dark-blue text-dark-blue text-base sm:text-xl font-medium hover:bg-dark-blue/5 transition-all bg-transparent"
-            onClick={() => setPage('auth')}
-          >
-            Sign In
-          </Button>
-
-          <Button 
-            className="w-full sm:w-72 h-12 sm:h-14 rounded-2xl bg-dark-blue hover:bg-dark-blue/90 text-white text-base sm:text-xl font-medium flex items-center justify-center gap-2 sm:gap-3 soft-shadow"
-            onClick={() => {
-              const el = document.getElementById('features');
-              el?.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            Explore Features <ChevronRight size={18} sm:size={24} />
-          </Button>
-        </motion.div>
-      </div>
-    </div>
-
-      {/* Landing page features section starts below */}
-      <section id="features" className="w-full max-w-7xl mx-auto py-8 sm:py-12 md:py-24 space-y-8 sm:space-y-12 md:space-y-16">
-        <div className="text-center px-4">
-           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-serif text-[#1a3a6d] tracking-tight mb-3 sm:mb-4">
-             {t('our_features')}
-           </h2>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8 px-4 sm:px-6">
-          {[
-            { 
-              title: t('text_analysis'), 
-              desc: t('text_analysis_desc'), 
-              icon: MessageSquare, 
-              color: 'bg-[#eff6ff]', 
-              iconColor: 'text-blue-500' 
-            },
-            { 
-              title: t('voice_analysis'), 
-              desc: t('voice_analysis_desc'), 
-              icon: Mic, 
-              color: 'bg-[#f0fdf4]', 
-              iconColor: 'text-green-500' 
-            },
-            { 
-              title: t('multimodal_analysis'), 
-              desc: t('multimodal_analysis_desc'), 
-              icon: Brain, 
-              color: 'bg-[#faf5ff]', 
-              iconColor: 'text-purple-500' 
-            },
-            { 
-              title: t('emotion_analysis'), 
-              desc: t('emotion_analysis_desc'), 
-              icon: Activity, 
-              color: 'bg-[#fdf2f8]', 
-              iconColor: 'text-pink-500' 
-            },
-            { 
-              title: t('severity_analysis'), 
-              desc: t('severity_analysis_desc'), 
-              icon: AlertTriangle, 
-              color: 'bg-[#fffbeb]', 
-              iconColor: 'text-amber-500' 
-            },
-            { 
-              title: t('wellness_suggestions'), 
-              desc: t('wellness_suggestions_desc'), 
-              icon: Heart, 
-              color: 'bg-[#f0f9ff]', 
-              iconColor: 'text-red-500' 
-            }
-          ].map((feature, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="bg-white rounded-[1.5rem] sm:rounded-[2.5rem] p-4 sm:p-6 md:p-10 flex flex-col items-center text-center space-y-4 sm:space-y-6 shadow-[0_10px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_20px_50px_-20px_rgba(0,0,0,0.1)] transition-all duration-500 border border-transparent hover:border-blue-100 group"
-            >
-              <div className={`w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 ${feature.color} rounded-xl sm:rounded-2xl md:rounded-3xl flex items-center justify-center transition-transform duration-500 group-hover:scale-110 shadow-sm`}>
-                <feature.icon size={28} sm:size={32} md:size={36} className={feature.iconColor} />
-              </div>
-              <div className="space-y-2 sm:space-y-3 md:space-y-4">
-                <h3 className="text-lg sm:text-xl md:text-2xl font-serif text-[#1a3a6d]">
-                  {feature.title}
-                </h3>
-                <p className="text-[#2d5da1] font-light leading-relaxed text-sm sm:text-base md:text-lg">
-                  {feature.desc}
-                </p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        <div className="flex justify-center pt-6 sm:pt-8 px-4">
-           <Button 
-            className="h-12 sm:h-16 px-6 sm:px-12 rounded-2xl bg-[#6366f1] hover:bg-[#6366f1]/90 text-white text-base sm:text-xl font-medium flex items-center justify-center gap-2 sm:gap-3 soft-shadow transition-all hover:scale-105 active:scale-95 w-full sm:w-auto"
-            onClick={() => setPage('language')}
-          >
-            {t('start_analysis')} <ChevronRight size={18} sm:size={24} />
-          </Button>
-        </div>
-      </section>
-    </div>
+    <LandingPage setPage={setPage} />
   );
 
-  const renderLanguage = () => {
-    const languages = [
-      { 
-        code: 'en', 
-        name: 'English', 
-        region: 'US', 
-        desc: 'Global language for international communication' 
-      },
-      { 
-        code: 'hi', 
-        name: 'हिन्दी', 
-        region: 'IN', 
-        desc: 'Hindi - Major Indian language' 
-      },
-      { 
-        code: 'kn', 
-        name: 'ಕನ್ನಡ', 
-        region: 'IN', 
-        desc: 'Kannada - Regional language for Karnataka' 
-      }
-    ];
-
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen relative px-6 py-6 overflow-hidden bg-[#dce9f9]">
-        <div className="absolute top-8 left-8 z-20">
-          <Button 
-            variant="ghost" 
-            className="rounded-full text-dark-blue hover:text-dark-blue/90 hover:bg-blue-50 h-10 px-5 font-bold uppercase tracking-widest text-[10px] transition-all bg-blue-50/50" 
-            onClick={() => setPage('auth')}
-          >
-            <ChevronLeft size={16} className="mr-1" /> {t('back')}
-          </Button>
-        </div>
-
-        <div className="w-full max-w-2xl relative z-10 flex flex-col gap-4 sm:gap-5">
-          {languages.map((lang, i) => (
-            <motion.div
-              key={lang.code}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.1 }}
-              onClick={() => {
-                setSelectedLanguage(lang.code);
-                i18n.changeLanguage(lang.code);
-              }}
-              className={`relative flex items-center p-5 sm:p-8 rounded-[1.25rem] sm:rounded-[1.5rem] cursor-pointer transition-all duration-300 border-[3px] ${
-                selectedLanguage === lang.code 
-                  ? 'bg-indigo-50 border-[#6366f1] shadow-2xl shadow-indigo-500/10' 
-                  : 'bg-white border-transparent hover:border-indigo-100 shadow-md hover:shadow-lg'
-              }`}
-            >
-              {/* Region */}
-              <div className={`text-3xl sm:text-5xl font-bold tracking-tighter mr-5 sm:mr-8 transition-colors ${
-                selectedLanguage === lang.code ? 'text-[#6366f1]' : 'text-[#1a3a6d]/40'
-              }`}>
-                {lang.region}
-              </div>
-
-              {/* Content */}
-              <div className="flex-1 space-y-0.5 sm:space-y-1">
-                <h3 className={`text-xl sm:text-3xl font-medium transition-colors ${
-                  selectedLanguage === lang.code ? 'text-indigo-900' : 'text-[#1a3a6d]/80'
-                }`}>
-                  {lang.name}
-                </h3>
-                <p className={`text-sm sm:text-base font-light transition-colors ${
-                  selectedLanguage === lang.code ? 'text-[#6366f1]' : 'text-[#2d5da1]/60'
-                }`}>
-                  {lang.desc}
-                </p>
-              </div>
-
-              {/* Selection Indicator */}
-              <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 flex items-center justify-center transition-all ${
-                selectedLanguage === lang.code 
-                  ? 'border-[#6366f1] bg-[#6366f1]' 
-                  : 'border-slate-200 bg-transparent'
-              }`}>
-                {selectedLanguage === lang.code && (
-                  <div className="w-3 h-3 sm:w-5 sm:h-5 rounded-full bg-white shadow-sm" />
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        <motion.div 
-          animate={{ opacity: selectedLanguage ? 1 : 0 }}
-          className="mt-12 relative z-10"
-        >
-          <Button 
-            size="lg" 
-            disabled={!selectedLanguage}
-            className="bg-dark-blue hover:bg-dark-blue/90 text-white px-20 h-16 rounded-2xl text-xl font-medium shadow-lg transition-all hover:scale-105 active:scale-95"
-            onClick={() => setPage('analysis')}
-          >
-            {t('proceed')} <ChevronRight className="ml-4" />
-          </Button>
-        </motion.div>
-      </div>
-    );
-  };
+  const renderLanguage = () => (
+    <LanguageSelectionPage 
+      setPage={setPage}
+      selectedLanguage={selectedLanguage}
+      setSelectedLanguage={setSelectedLanguage}
+    />
+  );
 
 
   const renderAnalysis = () => {
     return (
-      <div className="py-4 sm:py-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto px-4 sm:px-6">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="py-4 sm:py-8 space-y-6 sm:space-y-8 max-w-7xl mx-auto px-4 sm:px-6"
+      >
+        {/* Back Button */}
+        <motion.button
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.1 }}
+          whileHover={{ scale: 1.05, x: -5 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setPage('profile')}
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#1a3a6d] to-[#2d5da1] text-white rounded-lg hover:from-[#2d5da1] hover:to-[#1a3a6d] transition-all duration-200 shadow-md hover:shadow-lg mb-6"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span className="text-sm font-medium">Back to Profile</span>
+        </motion.button>
         {/* Customized Tabs Navigation */}
-        <div className="w-full bg-white rounded-2xl p-1 shadow-sm border border-indigo-50 flex gap-1 sm:gap-2">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2 }}
+          className="w-full bg-white rounded-2xl p-1 shadow-sm border border-indigo-50 flex gap-1 sm:gap-2"
+        >
           {[
             { value: 'text', label: t('text_analysis_tab') },
             { value: 'voice', label: t('voice_analysis_tab') },
             { value: 'assessment', label: t('multimodal_tab') }
-          ].map((tab) => (
-            <button
+          ].map((tab, index) => (
+            <motion.button
               key={tab.value}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 + index * 0.1 }}
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => setActiveTab(tab.value)}
-              className={`flex-1 py-3 sm:py-4 rounded-xl text-sm sm:text-lg font-medium transition-all ${
+              className={`flex-1 py-3 sm:py-4 rounded-xl text-sm sm:text-lg font-medium transition-all shadow-sm hover:shadow-md ${
                 activeTab === tab.value 
-                  ? 'bg-dark-blue text-white shadow-lg' 
+                  ? 'bg-gradient-to-r from-[#1a3a6d] to-[#2d5da1] text-white shadow-lg' 
                   : 'text-[#1a3a6d]/60 hover:text-[#1a3a6d] hover:bg-indigo-50/50'
               }`}
             >
               {tab.label}
-            </button>
+            </motion.button>
           ))}
-        </div>
+        </motion.div>
 
-        <div className="grid lg:grid-cols-[1fr_400px] gap-6 sm:gap-8 items-start">
+        <motion.div 
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.4 }}
+          className="grid lg:grid-cols-[1fr_400px] gap-6 sm:gap-8 items-start"
+        >
           {/* Main Content Area */}
-          <GlassCard className="p-4 sm:p-6 md:p-10 bg-white/70 border-[2px] sm:border-[3px] border-indigo-100/50 min-h-[400px] sm:min-h-[500px] md:min-h-[600px] flex flex-col">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.5 }}
+            whileHover={{ y: -5 }}
+            className="p-4 sm:p-6 md:p-10 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border-[2px] sm:border-[3px] border-indigo-100/50 min-h-[400px] sm:min-h-[500px] md:min-h-[600px] flex flex-col"
+          >
             <div className="flex-1 space-y-6 sm:space-y-8">
               {activeTab === 'text' && (
-                <div className="space-y-3 sm:space-y-6">
-                  <h3 className="text-lg sm:text-xl md:text-2xl font-serif text-[#1a3a6d]">{t('enter_your_text')}</h3>
-                  <textarea 
-                    className="w-full h-48 sm:h-64 md:h-80 p-4 sm:p-6 md:p-8 rounded-[1rem] sm:rounded-[1.5rem] md:rounded-[2rem] bg-indigo-50/30 border-2 border-indigo-100/50 focus:border-[#1e6efd] focus:ring-4 focus:ring-blue-100 outline-none transition-all resize-none text-lg sm:text-xl md:text-2xl font-light text-[#1a3a6d] placeholder:opacity-30"
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  className="space-y-3 sm:space-y-6"
+                >
+                  <motion.h3 
+                    className="text-lg sm:text-xl md:text-2xl font-serif text-[#1a3a6d]"
+                    whileHover={{ scale: 1.02 }}
+                  >
+                    {t('enter_your_text')}
+                  </motion.h3>
+                  <motion.textarea 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.7 }}
+                    whileFocus={{ scale: 1.02, borderColor: "#1a3a6d" }}
+                    className="w-full h-48 sm:h-64 md:h-80 p-4 sm:p-6 md:p-8 rounded-[1rem] sm:rounded-[1.5rem] md:rounded-[2rem] bg-indigo-50/30 border-2 border-indigo-100/50 focus:border-dark-blue focus:ring-4 focus:ring-dark-blue/20 outline-none transition-all resize-none text-lg sm:text-xl md:text-2xl font-light text-[#1a3a6d] placeholder:opacity-30"
                     placeholder={t('describe_emotions')}
                     value={textInput}
                     onChange={(e) => setTextInput(e.target.value)}
                   />
-                  <Button 
-                    className="w-full h-12 sm:h-16 md:h-20 rounded-[1rem] sm:rounded-[1.25rem] md:rounded-[1.5rem] bg-dark-blue hover:bg-dark-blue/90 text-white text-base sm:text-xl md:text-2xl font-bold tracking-tight shadow-xl shadow-blue-200 transition-all active:scale-95 disabled:grayscale"
-                    onClick={handleTextAnalyze}
-                    disabled={loading || !textInput.trim()}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
                   >
-                    {loading ? t('analyzing') : t('analyze_text')}
-                  </Button>
-                </div>
+                    <Button 
+                      className="w-full h-12 sm:h-16 md:h-20 rounded-[1rem] sm:rounded-[1.25rem] md:rounded-[1.5rem] bg-gradient-to-r from-[#1a3a6d] to-[#2d5da1] hover:from-[#2d5da1] hover:to-[#1a3a6d] text-white text-base sm:text-xl md:text-2xl font-bold tracking-tight shadow-xl shadow-blue-200 transition-all active:scale-95 disabled:grayscale"
+                      onClick={handleTextAnalyze}
+                      disabled={loading || !textInput.trim()}
+                      whileHover={{ scale: 1.02, y: -2 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {loading ? t('analyzing') : t('analyze_text')}
+                    </Button>
+                  </motion.div>
+                </motion.div>
               )}
               {activeTab === 'voice' && (
                 <div className="space-y-6 sm:space-y-12 flex flex-col items-center justify-center h-full py-4 sm:py-12">
@@ -1032,7 +926,7 @@ export default function App() {
                        whileHover={{ scale: 1.05 }}
                        whileTap={{ scale: 0.95 }}
                        className={`w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 rounded-full flex items-center justify-center shadow-3xl relative z-10 transition-colors duration-500 ${
-                         isRecording ? 'bg-red-500 text-white' : 'bg-white text-[#1e6efd] border-4 border-indigo-50'
+                         isRecording ? 'bg-red-500 text-white' : 'bg-white text-dark-blue border-4 border-dark-blue/20'
                        }`}
                        onClick={isRecording ? stopRecording : startRecording}
                      >
@@ -1053,12 +947,13 @@ export default function App() {
                      </motion.button>
                    </div>
  
-                   {recordedAudio && !loading && (
+                   {recordedAudio && (
                      <Button 
                        className="h-12 sm:h-16 md:h-20 px-6 sm:px-10 md:px-16 rounded-full bg-dark-blue hover:bg-dark-blue/90 text-white text-base sm:text-lg md:text-xl font-bold shadow-xl transition-all hover:scale-105"
                        onClick={handleVoiceAnalyze}
+                       disabled={loading}
                      >
-                       {t('analyze')}
+                       {loading ? t('analyzing') : t('analyze')}
                      </Button>
                    )}
                 </div>
@@ -1225,7 +1120,7 @@ export default function App() {
                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-8 sm:mt-12 p-5 sm:p-8 bg-indigo-50/50 rounded-[1.5rem] sm:rounded-3xl border border-indigo-100 space-y-6">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="space-y-1">
-                      <p className="text-[10px] sm:text-xs font-bold text-[#1e6efd] uppercase tracking-widest">{t('detected_emotion')}</p>
+                      <p className="text-[10px] sm:text-xs font-bold text-dark-blue uppercase tracking-widest">{t('detected_emotion')}</p>
                       <h4 className="text-4xl sm:text-5xl font-serif text-[#1a3a6d]">{analysisResult.emotion || 'Unknown'}</h4>
                     </div>
                     {!(analysisResult.emotion === 'Neutral' || analysisResult.emotion === 'Happy') && (
@@ -1250,6 +1145,24 @@ export default function App() {
                       <div className="flex gap-4 pt-2">
                          <div className="px-3 py-1 bg-white/50 rounded-lg text-[10px] text-slate-500 uppercase font-bold">Vocal: {analysisResult.masking.vocalEmotion}</div>
                          <div className="px-3 py-1 bg-white/50 rounded-lg text-[10px] text-slate-500 uppercase font-bold">Content: {analysisResult.masking.semanticEmotion}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {analysisResult.uncertain && (
+                    <div className="p-6 bg-amber-50 rounded-2xl border border-amber-100 space-y-2">
+                      <div className="flex items-center gap-3 text-amber-600">
+                        <AlertTriangle size={20} />
+                        <span className="font-bold uppercase tracking-widest text-xs">Emotional Uncertainty Detected</span>
+                      </div>
+                      <p className="text-amber-900 font-light italic leading-relaxed">
+                        {activeTab === 'text' 
+                          ? "The text contains conflicting emotions or mixed feelings, making it difficult to determine a clear emotional state."
+                          : "The vocal analysis shows uncertainty in emotional expression, possibly due to mixed feelings or unclear vocal patterns."
+                        }
+                      </p>
+                      <div className="px-3 py-1 bg-white/50 rounded-lg text-[10px] text-slate-500 uppercase font-bold">
+                        Confidence: {Math.round((analysisResult.confidence || 0) * 100)}%
                       </div>
                     </div>
                   )}
@@ -1282,7 +1195,7 @@ export default function App() {
                     </div>
                   )}
 
-                  {analysisResult.suggestions && analysisResult.suggestions.length > 0 && (
+                  {analysisResult.suggestions && analysisResult.suggestions.length > 0 && !analysisResult.masking?.detected && !analysisResult.uncertain && (
                     <div className="grid gap-3">
                       {analysisResult.suggestions.slice(0, 3).map((s, i) => (
                         <div key={i} className="text-lg font-light text-[#2d5da1] italic border-l-4 border-indigo-200 pl-6 py-2">
@@ -1293,11 +1206,11 @@ export default function App() {
                   )}
                </motion.div>
             )}
-          </GlassCard>
+          </motion.div>
              {/* Right Widget: Wellness Resources */}
           <GlassCard className="p-4 sm:p-6 md:p-10 bg-white/70 border-none shadow-xl border border-indigo-100 space-y-4 sm:space-y-6 md:space-y-8 h-fit">
             <div className="flex items-start gap-3 sm:gap-4">
-              <div className="p-2 sm:p-3 md:p-4 bg-blue-50 text-[#1e6efd] rounded-lg sm:rounded-xl md:rounded-2xl">
+              <div className="p-2 sm:p-3 md:p-4 bg-dark-blue/10 text-dark-blue rounded-lg sm:rounded-xl md:rounded-2xl">
                 <Heart size={20} sm:size={24} md:size={32} />
               </div>
               <div className="space-y-1">
@@ -1313,9 +1226,9 @@ export default function App() {
                   whileHover={{ x: 5, sm: { x: 10 }, backgroundColor: '#eff6ff' }}
                   whileTap={{ scale: 0.98 }}
                   onClick={resource.action}
-                  className="w-full h-12 sm:h-16 md:h-20 px-4 sm:px-6 md:px-8 rounded-lg sm:rounded-xl md:rounded-2xl bg-indigo-50/30 border-2 border-indigo-100/30 flex items-center gap-3 sm:gap-4 md:gap-6 text-base sm:text-lg md:text-xl font-medium text-[#1a3a6d] transition-all hover:border-[#1e6efd]/20 group"
+                  className="w-full h-12 sm:h-16 md:h-20 px-4 sm:px-6 md:px-8 rounded-lg sm:rounded-xl md:rounded-2xl bg-indigo-50/30 border-2 border-indigo-100/30 flex items-center gap-3 sm:gap-4 md:gap-6 text-base sm:text-lg md:text-xl font-medium text-[#1a3a6d] transition-all hover:border-dark-blue/20 group"
                 >
-                  <div className="w-8 sm:w-10 md:w-12 h-8 sm:h-10 md:h-12 flex items-center justify-center text-[#1e6efd] transition-transform group-hover:scale-110">
+                  <div className="w-8 sm:w-10 md:w-12 h-8 sm:h-10 md:h-12 flex items-center justify-center text-dark-blue transition-transform group-hover:scale-110">
                     <resource.icon size={20} sm:size={24} md:size={28} />
                   </div>
                   <span className="text-sm sm:text-base md:text-lg">{resource.label}</span>
@@ -1323,7 +1236,7 @@ export default function App() {
               ))}
             </div>
           </GlassCard>
-        </div>
+        </motion.div>
 
         {/* Resource Dialog */}
         <Dialog open={!!activeResource} onOpenChange={() => setActiveResource(null)}>
@@ -1404,8 +1317,8 @@ export default function App() {
                   >
                     <div className="flex justify-between items-start gap-4">
                       <div className="space-y-1 flex-1">
-                        <h4 className="text-xl sm:text-2xl font-medium text-[#1a3a6d] group-hover:text-[#1e6efd] transition-colors">{item.title}</h4>
-                        {item.author && <p className="text-blue-600 font-medium text-xs sm:text-sm">by {item.author}</p>}
+                        <h4 className="text-xl sm:text-2xl font-medium text-[#1a3a6d] group-hover:text-dark-blue transition-colors">{item.title}</h4>
+                        {item.author && <p className="text-dark-blue font-medium text-xs sm:text-sm">by {item.author}</p>}
                         <p className="text-base sm:text-lg font-light text-[#2d5da1] leading-relaxed">{item.desc}</p>
                         {item.detail && <p className="text-xs sm:text-sm font-medium text-indigo-400 mt-2">{item.detail}</p>}
                       </div>
@@ -1429,7 +1342,7 @@ export default function App() {
             </ScrollArea>
           </DialogContent>
         </Dialog>
-      </div>
+      </motion.div>
     );
   };
 
@@ -1537,23 +1450,117 @@ export default function App() {
     </div>
   );
 
+  const renderHistory = () => {
+    const userId = user?.email || user?.id || 'anonymous';
+    
+    return (
+      <div className="min-h-screen bg-silk text-obsidian font-sans selection:bg-sage/20">
+        <Atmosphere />
+        <HistorySimple 
+          userId={userId} 
+          onBack={() => setPage('analysis')}
+        />
+      </div>
+    );
+  };
+
+  const renderFeatures = () => (
+    <FeaturesPage setPage={setPage} />
+  );
+
+  const renderProfile = () => {
+    const userId = user?.email || user?.id || 'anonymous';
+    
+    return (
+      <ProfilePage setPage={setPage} userId={userId} />
+    );
+  };
+
   return (
     <div className="min-h-screen bg-silk text-obsidian font-sans selection:bg-sage/20">
       <Atmosphere />
-
-      {page !== 'landing' && (
-        <nav className="sticky top-0 z-50 border-b border-obsidian/[0.03] bg-silk/40 backdrop-blur-3xl h-16">
-          <div className="container mx-auto px-6 h-full flex items-center relative">
-            <div 
-              className="flex items-center gap-3 cursor-pointer group transition-all duration-700 absolute left-1/2 -translate-x-1/2"
+      
+      {page !== 'landing' && page !== 'auth' && (
+        <motion.nav 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="sticky top-0 z-50 border-b border-obsidian/[0.03] bg-[#1a3a6d] backdrop-blur-3xl h-16 sm:h-20 shadow-lg"
+        >
+          <div className="container mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
+            <motion.div 
+              className="flex items-center gap-2 sm:gap-3 cursor-pointer group transition-all duration-700"
               onClick={() => setPage('landing')}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <span className="font-serif tracking-tight text-obsidian transition-all duration-700 font-bold text-3xl sm:text-4xl">
+              <motion.span 
+                className="font-serif tracking-tight text-white transition-all duration-700 font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl"
+                whileHover={{ color: "#ffffff" }}
+              >
                 {t('app_name')}
-              </span>
+              </motion.span>
+            </motion.div>
+            
+            <div className="flex items-center gap-1 sm:gap-2">
+              <motion.button
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setPage('features')}
+                className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg transition-all shadow-sm hover:shadow-md ${
+                  page === 'features' 
+                    ? 'bg-gradient-to-r from-[#2d5da1] to-[#3a6ba5] text-white shadow-lg' 
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <motion.div
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <Brain className="w-4 h-4 sm:w-5 sm:h-5" />
+                </motion.div>
+                <span className="text-xs sm:text-sm md:text-base font-medium">Features</span>
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setPage('profile')}
+                className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg transition-all shadow-sm hover:shadow-md ${
+                  page === 'profile' 
+                    ? 'bg-gradient-to-r from-[#2d5da1] to-[#3a6ba5] text-white shadow-lg' 
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <motion.div
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                </motion.div>
+                <span className="text-xs sm:text-sm md:text-base font-medium">Profile</span>
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setPage('history')}
+                className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg transition-all shadow-sm hover:shadow-md ${
+                  page === 'history' 
+                    ? 'bg-gradient-to-r from-[#2d5da1] to-[#3a6ba5] text-white shadow-lg' 
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <motion.div
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <History className="w-4 h-4 sm:w-5 sm:h-5" />
+                </motion.div>
+                <span className="text-xs sm:text-sm md:text-base font-medium">History</span>
+              </motion.button>
             </div>
           </div>
-        </nav>
+        </motion.nav>
       )}
 
       <main className="container mx-auto px-6 overflow-hidden">
@@ -1570,6 +1577,9 @@ export default function App() {
             {page === 'language' && renderLanguage()}
             {page === 'analysis' && renderAnalysis()}
             {page === 'summary' && renderSummary()}
+            {page === 'history' && renderHistory()}
+            {page === 'features' && renderFeatures()}
+            {page === 'profile' && renderProfile()}
           </motion.div>
         </AnimatePresence>
       </main>
