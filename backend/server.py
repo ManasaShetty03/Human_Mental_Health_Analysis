@@ -45,36 +45,9 @@ def create_app():
     app = Flask(__name__, static_folder=None)
     CORS(app)
     
-    # Initialize backup models on startup
-    logger.info("Initializing backup models...")
-    try:
-        text_analyzer = get_backup_text_analyzer()
-        if text_analyzer.initialize():
-            logger.info("✅ Text backup model initialized")
-        else:
-            logger.warning("⚠️ Text backup model initialization failed")
-    except Exception as e:
-        logger.error(f"❌ Text backup model error: {e}")
-    
-    try:
-        voice_analyzer = get_backup_analyzer()
-        if voice_analyzer.initialize():
-            logger.info("✅ Voice backup model initialized")
-        else:
-            logger.warning("⚠️ Voice backup model initialization failed")
-    except Exception as e:
-        logger.error(f"❌ Voice backup model error: {e}")
-    
-    try:
-        face_analyzer = get_backup_face_analyzer()
-        if face_analyzer.initialize():
-            logger.info("✅ Face backup model initialized")
-        else:
-            logger.warning("⚠️ Face backup model initialization failed")
-    except Exception as e:
-        logger.error(f"❌ Face backup model error: {e}")
-    
-    logger.info("Backup model initialization complete")
+    # Skip backup model initialization for production deployment
+    # Models will be initialized on-demand when needed
+    logger.info("Skipping backup model initialization for production")
     
     # Configuration
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -856,7 +829,7 @@ def start_server():
     HOST = os.getenv('HOST', '0.0.0.0')
     
     logger.info(f"Starting MindCare Backend on {HOST}:{PORT}")
-    app.run(host=HOST, port=PORT, debug=True)
+    app.run(host=HOST, port=PORT, debug=False)
 
 if __name__ == "__main__":
     start_server()
