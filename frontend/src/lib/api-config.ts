@@ -10,7 +10,7 @@ export async function getApiConfig(): Promise<ApiConfig> {
   }
 
   try {
-    const response = await fetch('/api/config');
+    const response = await fetch('https://mindcare-backend.onrender.com/api/config');
     if (!response.ok) {
       throw new Error('Failed to fetch API configuration');
     }
