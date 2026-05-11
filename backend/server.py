@@ -16,7 +16,7 @@ from backup_text_analysis import get_backup_text_analyzer
 # Import backup face analysis
 from backup_face_analysis import get_backup_face_analyzer
 # Import database models
-from database_models import get_database
+from database_models import get_database, AnalysisDatabase
 
 # Load environment variables
 load_dotenv()
@@ -35,9 +35,33 @@ if not GEMINI_API_KEY:
 # Database setup - defer connection until app starts
 db = None
 
+# Initialize database handler
+analysis_db = None
+
+def initialize_database():
+    """Initialize database connection and analysis handler"""
+    global db, analysis_db
+    try:
+        db = get_database()
+        logger.info("Database connected successfully")
+        
+        # Initialize analysis database handler
+        analysis_db = AnalysisDatabase(MONGODB_URI)
+        logger.info("Analysis database initialized")
+        
+        return True
+    except Exception as e:
+        logger.error(f"Database initialization failed: {str(e)}")
+        return False
+
 def create_app():
     app = Flask(__name__, static_folder=None)
     CORS(app, origins=["*"], allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], supports_credentials=True)
+    
+    # Initialize database on app startup
+    if not initialize_database():
+        logger.error("Failed to initialize database")
+        return app
     
     @app.after_request
     def after_request(response):
@@ -214,48 +238,42 @@ def create_app():
             logger.error(f"User creation error: {str(e)}")
             return jsonify({'error': 'User creation failed'}), 500
 
-    @app.route('/api/login', methods=['POST'])
+    @app.route("/api/login", methods=["POST"])
     def login():
-        """Login user with email and password"""
+        """Handle user login"""
         try:
-            if not db.is_connected():
-                return jsonify({'error': 'Database not connected'}), 500
-            
             data = request.get_json()
             email = data.get('email')
             password = data.get('password')
             
-            # Validate input
             if not email or not password:
-                return jsonify({'error': 'Missing email or password'}), 400
+                return jsonify({"error": "Email and password are required"}), 400
             
-            # Find user by email using the database connection
-            user = db.db.users.find_one({'personal_info.email': email})
+            db = get_database()
+            if not db:
+                return jsonify({"error": "Database connection failed"}), 500
+            
+            user = db.users.find_one({"email": email})
             if not user:
-                return jsonify({'error': 'Invalid credentials'}), 401
+                return jsonify({"error": "Invalid credentials"}), 401
             
-            # Check password (simple comparison for now - in production use proper hashing)
-            stored_password = user.get('account_info', {}).get('password_hash', '')
-            if password != stored_password:
-                return jsonify({'error': 'Invalid credentials'}), 401
+            # Check password (simple comparison for now)
+            if password != user.get('password_hash'):
+                return jsonify({"error": "Invalid credentials"}), 401
             
-            # Update last login
-            db.db.users.update_one(
-                {'_id': user['_id']},
-                {'$set': {'account_info.last_login': datetime.utcnow()}}
+            # Create session
+            session_id = str(ObjectId())
+            db.users.update_one(
+                {"_id": user["_id"]},
+                {"$set": {"session_id": session_id}}
             )
             
             return jsonify({
-                'message': 'Login successful',
-                'user': {
-                    'id': str(user['_id']),
-                    'personal_info': user.get('personal_info', {}),
-                    'account_info': {
-                        'role': user.get('account_info', {}).get('role', 'student'),
-                        'status': user.get('account_info', {}).get('status', 'active')
-                    }
-                }
-            }), 200
+                "message": "Login successful",
+                "user_id": str(user["_id"]),
+                "email": user["email"],
+                "session_id": session_id
+            })
             
         except Exception as e:
             logger.error(f"Login error: {str(e)}")
