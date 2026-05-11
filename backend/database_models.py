@@ -30,12 +30,8 @@ class AnalysisDatabase:
     def connect(self) -> bool:
         """Connect to MongoDB"""
         try:
-            # Use simple SRV connection
-            self.client = MongoClient(
-                self.mongodb_uri,
-                ssl=True,
-                tlsAllowInvalidCertificates=True
-            )
+            # Try connection without SSL to bypass handshake issues
+            self.client = MongoClient(self.mongodb_uri)
             self.db = self.client.mindcare
             
             # Test connection
