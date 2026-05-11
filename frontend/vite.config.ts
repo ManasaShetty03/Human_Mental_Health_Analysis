@@ -26,5 +26,10 @@ export default defineConfig(({mode}) => {
     build: {
       outDir: 'dist',
     },
+    preview: {
+      allowedHosts: ['mindcare-frontendd.onrender.com', 'localhost'],
+      port: 10000,
+      host: '0.0.0.0'
+    },
   };
 });
