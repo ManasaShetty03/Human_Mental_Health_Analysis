@@ -30,7 +30,18 @@ class AnalysisDatabase:
     def connect(self) -> bool:
         """Connect to MongoDB"""
         try:
-            self.client = MongoClient(self.mongodb_uri)
+            # Try with SSL settings for Atlas compatibility
+            if "mongodb+srv://" in self.mongodb_uri:
+                self.client = MongoClient(
+                    self.mongodb_uri,
+                    tls=True,
+                    tlsAllowInvalidCertificates=True,
+                    retryWrites=True,
+                    w='majority'
+                )
+            else:
+                self.client = MongoClient(self.mongodb_uri)
+            
             self.db = self.client.mindcare
             
             # Test connection
