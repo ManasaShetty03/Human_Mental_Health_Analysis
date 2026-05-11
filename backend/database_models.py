@@ -34,7 +34,6 @@ class AnalysisDatabase:
             self.client = MongoClient(
                 self.mongodb_uri,
                 ssl=True,
-                ssl_cert_reqs=None,
                 tlsAllowInvalidCertificates=True
             )
             self.db = self.client.mindcare
