@@ -32,14 +32,8 @@ MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/mindcare')
 if not GEMINI_API_KEY:
     logger.warning("GEMINI_API_KEY not found in environment variables")
 
-# Database setup
+# Database setup - defer connection until app starts
 db = None
-try:
-    db = get_database()
-    logger.info("Database connected successfully")
-except Exception as e:
-    logger.error(f"Database connection failed: {str(e)}")
-    db = None
 
 def create_app():
     app = Flask(__name__, static_folder=None)
