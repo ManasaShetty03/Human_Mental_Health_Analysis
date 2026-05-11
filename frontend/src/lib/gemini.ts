@@ -358,7 +358,7 @@ export async function analyzeFace(emotion: string, confidence: number, language:
       console.log("Gemini API failed, falling back to backup face analysis...");
       // Note: For face analysis, we need to convert the emotion and confidence to an image
       // Since we don't have the actual image, we'll use the emotion data as text input
-      const response = await fetch('http://localhost:3000/api/backup-face-analysis', {
+      const response = await fetch('https://mindcare-backend.onrender.com/api/backup-face-analysis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -403,7 +403,7 @@ export async function analyzeFace(emotion: string, confidence: number, language:
 
 export async function storeAnalysis(analysisData: any, userId: string): Promise<boolean> {
   try {
-    const response = await fetch('http://localhost:3000/api/analysis/store', {
+    const response = await fetch('https://mindcare-backend.onrender.com/api/analysis/store', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -502,7 +502,7 @@ export async function analyzeText(text: string, language: string = 'en'): Promis
     // When Gemini API fails, fall back to backup models
     try {
       console.log("Gemini API failed, falling back to backup text analysis...");
-      const response = await fetch('http://localhost:3000/api/backup-text-analysis', {
+      const response = await fetch('https://mindcare-backend.onrender.com/api/backup-text-analysis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -701,7 +701,7 @@ export async function analyzeAudio(audioBase64: string, features: any, language:
     // When Gemini API fails, fall back to backup models
     try {
       console.log("Gemini API failed, falling back to backup voice analysis...");
-      const response = await fetch('http://localhost:3000/api/backup-voice-analysis', {
+      const response = await fetch('https://mindcare-backend.onrender.com/api/backup-voice-analysis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

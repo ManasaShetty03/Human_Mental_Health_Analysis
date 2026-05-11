@@ -62,7 +62,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ setPage }) => {
           }
         };
         
-        const signupResponse = await fetch('http://localhost:3000/api/users', {
+        const signupResponse = await fetch('https://mindcare-backend.onrender.com/api/users', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -94,7 +94,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ setPage }) => {
           password: authForm.password
         };
         
-        const loginResponse = await fetch('http://localhost:3000/api/login', {
+        const loginResponse = await fetch('https://mindcare-backend.onrender.com/api/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
