@@ -9,14 +9,19 @@ from typing import Dict, List, Optional, Any
 from pymongo import MongoClient
 from bson import ObjectId
 import logging
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
 class AnalysisDatabase:
     """Database handler for storing and retrieving analysis results"""
     
-    def __init__(self, mongodb_uri: str = "mongodb://localhost:27017/mindcare"):
-        self.mongodb_uri = mongodb_uri
+    def __init__(self, mongodb_uri: str = None):
+        self.mongodb_uri = mongodb_uri or os.getenv('MONGODB_URI', 'mongodb://localhost:27017/mindcare')
         self.client = None
         self.db = None
         self.connect()
