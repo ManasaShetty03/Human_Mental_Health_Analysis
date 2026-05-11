@@ -58,6 +58,20 @@ def create_app():
     upload_path.mkdir(exist_ok=True)
     
     # API Routes
+    @app.route("/", methods=["GET"])
+    def root():
+        return jsonify({
+            "status": "ok", 
+            "message": "MindCare Backend is running",
+            "version": "1.0.0",
+            "endpoints": {
+                "health": "/api/health",
+                "config": "/api/config",
+                "login": "/api/login",
+                "users": "/api/users"
+            }
+        })
+    
     @app.route("/api/health", methods=["GET"])
     def health_check():
         return jsonify({
