@@ -43,15 +43,22 @@ def initialize_database():
     global db, analysis_db
     try:
         db = get_database()
-        logger.info("Database connected successfully")
+        if db and db.is_connected():
+            logger.info("Database connected successfully")
+        else:
+            logger.warning("Database connection failed - app will run without persistent storage")
         
         # Initialize analysis database handler
         analysis_db = AnalysisDatabase(MONGODB_URI)
-        logger.info("Analysis database initialized")
+        if analysis_db.is_connected():
+            logger.info("Analysis database initialized")
+        else:
+            logger.warning("Analysis database connection failed - app will run without persistent storage")
         
         return True
     except Exception as e:
         logger.error(f"Database initialization failed: {str(e)}")
+        logger.warning("App will continue without database connection")
         return False
 
 def create_app():
