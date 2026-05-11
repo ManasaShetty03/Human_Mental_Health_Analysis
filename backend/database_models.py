@@ -2,6 +2,7 @@
 """
 Database Models for MindCare Application
 Stores user analysis results and history
+Updated for MongoDB URI environment variable support
 """
 
 from datetime import datetime
