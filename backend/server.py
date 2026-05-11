@@ -257,10 +257,10 @@ def create_app():
                 return jsonify({"error": "Email and password are required"}), 400
             
             db = get_database()
-            if not db:
+            if not db or not db.is_connected():
                 return jsonify({"error": "Database connection failed"}), 500
             
-            user = db.users.find_one({"email": email})
+            user = db.db.users.find_one({"email": email})
             if not user:
                 return jsonify({"error": "Invalid credentials"}), 401
             
