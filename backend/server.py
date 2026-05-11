@@ -43,7 +43,7 @@ except Exception as e:
 
 def create_app():
     app = Flask(__name__, static_folder=None)
-    CORS(app)
+    CORS(app, origins=["https://mindcare-frontendd.onrender.com", "http://localhost:5173"])
     
     # Skip backup model initialization for production deployment
     # Models will be initialized on-demand when needed
@@ -70,7 +70,7 @@ def create_app():
     def get_config():
         """Provide frontend configuration including API keys"""
         return jsonify({
-            "GEMINI_API_KEY": GEMINI_API_KEY
+            "GEMINI_API_KEY": GEMINI_API_KEY or None
         })
     
     @app.route("/api/upload", methods=["POST"])
