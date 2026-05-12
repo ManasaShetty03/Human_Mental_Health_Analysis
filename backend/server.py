@@ -374,12 +374,8 @@ def create_app():
                 logger.error("Password mismatch")
                 return jsonify({"error": "Invalid credentials"}), 401
             
-            # Create session
+            # Create session (temporarily skip database update to isolate error)
             session_id = str(ObjectId())
-            db.users.update_one(
-                {"_id": user["_id"]},
-                {"$set": {"session_id": session_id}}
-            )
             
             logger.info(f"Login successful for user: {email}")
             return jsonify({
