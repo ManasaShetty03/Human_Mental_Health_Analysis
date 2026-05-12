@@ -332,6 +332,11 @@ def create_app():
                 "traceback": traceback.format_exc()
             }), 500
 
+    @app.route("/api/test", methods=["GET"])
+    def test_endpoint():
+        """Simple test endpoint to verify route registration"""
+        return jsonify({"message": "Test endpoint working", "timestamp": str(datetime.utcnow())})
+
     @app.route("/api/login", methods=["POST"])
     def login():
         """Handle user login"""
