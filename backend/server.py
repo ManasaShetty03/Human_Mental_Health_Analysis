@@ -8,6 +8,7 @@ import logging
 from pymongo import MongoClient
 from datetime import datetime
 import base64
+from bson import ObjectId
 
 # Import backup voice analysis
 from backup_voice_analysis import get_backup_analyzer
@@ -332,11 +333,6 @@ def create_app():
                 "traceback": traceback.format_exc()
             }), 500
 
-    @app.route("/api/test", methods=["GET"])
-    def test_endpoint():
-        """Simple test endpoint to verify route registration"""
-        return jsonify({"message": "Test endpoint working", "timestamp": str(datetime.utcnow())})
-
     @app.route("/api/login", methods=["POST"])
     def login():
         """Handle user login"""
@@ -398,6 +394,11 @@ def create_app():
             import traceback
             logger.error(f"Full traceback: {traceback.format_exc()}")
             return jsonify({'error': 'Login failed', 'details': str(e)}), 500
+
+    @app.route("/api/test", methods=["GET"])
+    def test_endpoint():
+        """Simple test endpoint to verify route registration"""
+        return jsonify({"message": "Test endpoint working", "timestamp": str(datetime.utcnow())})
 
     # Backup Voice Analysis Endpoint
     @app.route('/api/backup-voice-analysis', methods=['POST'])
