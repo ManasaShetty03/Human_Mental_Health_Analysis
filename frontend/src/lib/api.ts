@@ -1,5 +1,5 @@
 // API Configuration with environment variable support
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://mental-health-analysis-1ljn.onrender.com';
 
 // Helper function to construct API URLs
 export const getApiUrl = (endpoint: string): string => {

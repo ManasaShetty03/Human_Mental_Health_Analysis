@@ -4,6 +4,8 @@ import path from 'path';
 import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
@@ -30,6 +32,9 @@ export default defineConfig(({mode}) => {
       allowedHosts: ['mindcare-frontendd.onrender.com', 'localhost'],
       port: 10000,
       host: '0.0.0.0'
+    },
+    define: {
+      __APP_ENV__: JSON.stringify(env.VITE_API_URL || (mode === 'production' ? 'https://mental-health-analysis-1ljn.onrender.com' : 'http://localhost:3000')),
     },
   };
 });
