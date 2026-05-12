@@ -63,5 +63,7 @@ class BackupVoiceAnalyzer:
         return self.analyze_with_fallback(audio_data, is_base64, language)
 
 def get_backup_analyzer():
-    """Return an instance of the backup voice analyzer"""
-    return BackupVoiceAnalyzer()
+    """Return an initialized instance of the backup voice analyzer"""
+    analyzer = BackupVoiceAnalyzer()
+    analyzer.initialize()
+    return analyzer

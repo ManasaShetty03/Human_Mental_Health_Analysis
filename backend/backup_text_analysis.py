@@ -63,5 +63,7 @@ class BackupTextAnalyzer:
         return self.analyze_with_fallback(text_data, language)
 
 def get_backup_text_analyzer():
-    """Return an instance of the backup text analyzer"""
-    return BackupTextAnalyzer()
+    """Return an initialized instance of the backup text analyzer"""
+    analyzer = BackupTextAnalyzer()
+    analyzer.initialize()
+    return analyzer

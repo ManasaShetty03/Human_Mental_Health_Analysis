@@ -63,5 +63,7 @@ class BackupFaceAnalyzer:
         return self.analyze_with_fallback(face_data, language)
 
 def get_backup_face_analyzer():
-    """Return an instance of the backup face analyzer"""
-    return BackupFaceAnalyzer()
+    """Return an initialized instance of the backup face analyzer"""
+    analyzer = BackupFaceAnalyzer()
+    analyzer.initialize()
+    return analyzer
