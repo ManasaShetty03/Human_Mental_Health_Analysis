@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
+import { API_BASE_URL } from '../lib/api';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft } from 'lucide-react';
@@ -62,7 +63,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ setPage }) => {
           }
         };
         
-        const signupResponse = await fetch('https://mental-health-analysis-1ljn.onrender.com/api/users', {
+        const signupResponse = await fetch(`${API_BASE_URL}/api/users`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -94,7 +95,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ setPage }) => {
           password: authForm.password
         };
         
-        const loginResponse = await fetch('https://mental-health-analysis-1ljn.onrender.com/api/login', {
+        const loginResponse = await fetch(`${API_BASE_URL}/api/login`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -107,10 +108,10 @@ const SignupPage: React.FC<SignupPageProps> = ({ setPage }) => {
         if (loginResponse.ok) {
           // Set user context after successful login
           const userData = {
-            id: loginData.user.id || authForm.email,
-            name: loginData.user.personal_info?.name || authForm.email.split('@')[0],
+            id: loginData.user_id || authForm.email,
+            name: authForm.email.split('@')[0],
             email: authForm.email,
-            studentId: loginData.user.academic_info?.student_id
+            studentId: null
           };
           setUser(userData);
           
