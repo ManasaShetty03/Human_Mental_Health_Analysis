@@ -28,7 +28,8 @@ const SignupPage: React.FC<SignupPageProps> = ({ setPage }) => {
   });
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (authMode === 'signup') {
       if (!authForm.name || !authForm.email || !authForm.studentId || !authForm.password) {
         toast.error("Please fill in all required fields");
@@ -157,7 +158,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ setPage }) => {
             </p>
           </div>
 
-          <div className="space-y-4 sm:space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             {authMode === 'signup' && (
               <>
                 <div className="space-y-2 sm:space-y-3">
@@ -218,39 +219,39 @@ const SignupPage: React.FC<SignupPageProps> = ({ setPage }) => {
                 />
               </div>
             )}
-          </div>
-
-          <div className="space-y-4 sm:space-y-6">
-            <Button 
-              className="w-full h-14 sm:h-16 rounded-2xl bg-gradient-to-r from-[#1a3a6d] to-[#2d5da1] hover:from-[#2d5da1] hover:to-[#1a3a6d] text-white font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={handleSubmit}
-              disabled={loading}
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Processing...
-                </span>
-              ) : (
-                <span className="flex items-center justify-center gap-2">
-                  {authMode === 'login' ? 'Sign In' : 'Create Account'}
-                  <ChevronLeft className="rotate-180 w-4 h-4 sm:w-5 sm:h-5" />
-                </span>
-              )}
-            </Button>
             
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
-                className="text-[#1a3a6d] hover:text-[#2d5da1] text-sm sm:text-base font-medium transition-all duration-200 hover:underline underline-offset-4 decoration-2 decoration-[#1a3a6d]/50"
+            <div className="space-y-4 sm:space-y-6">
+              <Button 
+                type="submit"
+                className="w-full h-14 sm:h-16 rounded-2xl bg-gradient-to-r from-[#1a3a6d] to-[#2d5da1] hover:from-[#2d5da1] hover:to-[#1a3a6d] text-white font-bold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading}
               >
-                {authMode === 'login' 
-                  ? "Don't have an account? Sign up" 
-                  : "Already have an account? Sign in"}
-              </button>
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Processing...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    {authMode === 'login' ? 'Sign In' : 'Create Account'}
+                    <ChevronLeft className="rotate-180 w-4 h-4 sm:w-5 sm:h-5" />
+                  </span>
+                )}
+              </Button>
+              
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')}
+                  className="text-[#1a3a6d] hover:text-[#2d5da1] text-sm sm:text-base font-medium transition-all duration-200 hover:underline underline-offset-4 decoration-2 decoration-[#1a3a6d]/50"
+                >
+                  {authMode === 'login' 
+                    ? "Don't have an account? Sign up" 
+                    : "Already have an account? Sign in"}
+                </button>
+              </div>
             </div>
-          </div>
+          </form>
         </GlassCard>
       </motion.div>
     </div>
