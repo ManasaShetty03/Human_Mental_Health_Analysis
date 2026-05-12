@@ -260,12 +260,12 @@ def create_app():
             if not db or not db.is_connected():
                 return jsonify({"error": "Database connection failed"}), 500
             
-            user = db.users.find_one({"account_info.email": email})
+            user = db.users.find_one({"personal_info.email": email})
             if not user:
                 return jsonify({"error": "Invalid credentials"}), 401
             
             # Check password (simple comparison for now)
-            stored_password = user.get('account_info', {}).get('password')
+            stored_password = user.get('account_info', {}).get('password_hash')
             if password != stored_password:
                 return jsonify({"error": "Invalid credentials"}), 401
             
@@ -280,7 +280,7 @@ def create_app():
                 "success": True,
                 "message": "Login successful",
                 "user_id": str(user["_id"]),
-                "email": user["account_info"]["email"],
+                "email": user["personal_info"]["email"],
                 "session_id": session_id
             })
             
