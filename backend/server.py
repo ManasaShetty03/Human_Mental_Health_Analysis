@@ -284,6 +284,54 @@ def create_app():
             logger.error(f"Full traceback: {traceback.format_exc()}")
             return jsonify({'error': 'Debug failed', 'details': str(e)}), 500
 
+    @app.route("/api/test/login", methods=["POST"])
+    def test_login():
+        """Test login step by step to isolate the 500 error"""
+        try:
+            data = request.get_json()
+            email = data.get('email')
+            password = data.get('password')
+            
+            # Step 1: Validate input
+            if not email or not password:
+                return jsonify({"step": "input_validation", "error": "Missing email or password"}), 400
+            
+            # Step 2: Database connection
+            db = get_database()
+            if not db or not db.is_connected():
+                return jsonify({"step": "database_connection", "error": "Database connection failed"}), 500
+            
+            # Step 3: User lookup
+            user = db.users.find_one({"personal_info.email": email})
+            if not user:
+                return jsonify({"step": "user_lookup", "error": "User not found"}), 401
+            
+            # Step 4: Password validation
+            stored_password = user.get('account_info', {}).get('password_hash')
+            if password != stored_password:
+                return jsonify({"step": "password_validation", "error": "Password mismatch"}), 401
+            
+            # Step 5: Session creation (without actually updating)
+            session_id = str(ObjectId())
+            
+            return jsonify({
+                "step": "success",
+                "success": True,
+                "message": "Login test successful",
+                "user_id": str(user["_id"]),
+                "email": user["personal_info"]["email"],
+                "session_id": session_id,
+                "password_match": True
+            })
+            
+        except Exception as e:
+            import traceback
+            return jsonify({
+                "step": "exception",
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            }), 500
+
     @app.route("/api/login", methods=["POST"])
     def login():
         """Handle user login"""
