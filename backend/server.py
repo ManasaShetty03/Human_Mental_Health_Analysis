@@ -400,6 +400,57 @@ def create_app():
         """Simple test endpoint to verify route registration"""
         return jsonify({"message": "Test endpoint working", "timestamp": str(datetime.utcnow())})
 
+    @app.route("/api/auth/login", methods=["POST"])
+    def auth_login():
+        """Alternative login endpoint to bypass routing issues"""
+        try:
+            logger.info("Auth login attempt started")
+            
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "No data received"}), 400
+                
+            email = data.get('email')
+            password = data.get('password')
+            
+            logger.info(f"Auth login attempt for email: {email}")
+            
+            if not email or not password:
+                return jsonify({"error": "Email and password are required"}), 400
+            
+            db = get_database()
+            if not db or not db.is_connected():
+                return jsonify({"error": "Database connection failed"}), 500
+            
+            logger.info("Database connected, searching for user")
+            user = db.users.find_one({"personal_info.email": email})
+            
+            if not user:
+                return jsonify({"error": "Invalid credentials"}), 401
+            
+            logger.info(f"User found: {user.get('personal_info', {}).get('email')}")
+            
+            # Check password
+            stored_password = user.get('account_info', {}).get('password_hash')
+            if password != stored_password:
+                return jsonify({"error": "Invalid credentials"}), 401
+            
+            # Create session
+            session_id = str(ObjectId())
+            
+            logger.info(f"Auth login successful for user: {email}")
+            return jsonify({
+                "success": True,
+                "message": "Login successful",
+                "user_id": str(user["_id"]),
+                "email": user["personal_info"]["email"],
+                "session_id": session_id
+            })
+            
+        except Exception as e:
+            logger.error(f"Auth login error: {str(e)}")
+            return jsonify({'error': 'Login failed', 'details': str(e)}), 500
+
     # Backup Voice Analysis Endpoint
     @app.route('/api/backup-voice-analysis', methods=['POST'])
     def backup_voice_analysis():
