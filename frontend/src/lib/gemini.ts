@@ -303,6 +303,53 @@ export async function analyzeAudio(audioBase64: string, features: any, language:
   }
 }
 
+export async function generateFinalSummary(history: any[], language: string = 'en'): Promise<any> {
+  try {
+    // Ensure AI is initialized
+    if (!ai) {
+      await initializeAI();
+      if (!ai) {
+        throw new Error("AI not initialized - API key not available");
+      }
+    }
+    
+    const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
+    const prompt = `Based on the following emotional analysis history, generate a final summary. The user is interacting in the language: ${language}.
+    
+    ${JSON.stringify(history)}
+    
+    Return a JSON object with:
+    - overall_emotion (Happy, Sad, Angry, Neutral)
+    - confidence (0.0 to 1.0)
+    - emotion_trend (string in language: ${language})
+    - observations (array of strings in language: ${language})
+    - conflict_detected (boolean)
+    - masking_analysis (string explanation in language: ${language})
+    - uncertainty_detected (boolean)
+    - suggestions (array of 4 to 5 strings in language: ${language})`;
+
+    const response = await model.generateContent(prompt);
+    
+    handleSafetyBlock(response);
+    const fallback: any = {
+      overall_emotion: 'Neutral',
+      confidence: 0,
+      emotion_trend: "",
+      observations: [],
+      conflict_detected: false,
+      masking_analysis: "",
+      uncertainty_detected: true,
+      suggestions: []
+    };
+    
+    const responseText = response.response.text();
+    return extractJSON(responseText, fallback);
+  } catch (error) {
+    console.error("Error in generateFinalSummary:", error);
+    throw error;
+  }
+}
+
 export async function storeAnalysis(analysisData: any, userId: string): Promise<boolean> {
   try {
     const response = await fetch(`${API_BASE_URL}/api/analysis/store`, {
