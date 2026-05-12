@@ -245,6 +245,45 @@ def create_app():
             logger.error(f"User creation error: {str(e)}")
             return jsonify({'error': 'User creation failed'}), 500
 
+    @app.route("/api/debug/login", methods=["GET", "POST"])
+    def debug_login():
+        """Debug login endpoint to test database connection and user lookup"""
+        try:
+            db = get_database()
+            if not db or not db.is_connected():
+                return jsonify({
+                    "error": "Database connection failed",
+                    "db_type": str(type(db)),
+                    "db_connected": db is not None,
+                    "db_is_connected": db.is_connected() if db else False
+                }), 500
+            
+            # Test user lookup with different email formats
+            test_email = "24pg1bymca047@bmsit.in"
+            
+            user = db.users.find_one({"personal_info.email": test_email})
+            
+            return jsonify({
+                "success": True,
+                "db_type": str(type(db)),
+                "db_connected": db is not None,
+                "db_is_connected": db.is_connected(),
+                "test_email": test_email,
+                "user_found": user is not None,
+                "user_data": {
+                    "exists": user is not None,
+                    "personal_info_email": user.get('personal_info', {}).get('email') if user else None,
+                    "account_info_password_hash": user.get('account_info', {}).get('password_hash')[:3] + "***" if user and user.get('account_info', {}).get('password_hash') else None,
+                    "user_id": str(user["_id"]) if user else None
+                }
+            })
+            
+        except Exception as e:
+            logger.error(f"Debug login error: {str(e)}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
+            return jsonify({'error': 'Debug failed', 'details': str(e)}), 500
+
     @app.route("/api/login", methods=["POST"])
     def login():
         """Handle user login"""
