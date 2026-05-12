@@ -226,7 +226,7 @@ def create_app():
             }
             
             # Insert user
-            result = db.db.users.insert_one(user_doc)
+            result = db["mindcare"].users.insert_one(user_doc)
             
             return jsonify({
                 'message': 'User created successfully',
@@ -260,7 +260,7 @@ def create_app():
             if not db or not db.is_connected():
                 return jsonify({"error": "Database connection failed"}), 500
             
-            user = db.db.users.find_one({"email": email})
+            user = db["mindcare"].users.find_one({"email": email})
             if not user:
                 return jsonify({"error": "Invalid credentials"}), 401
             
@@ -270,7 +270,7 @@ def create_app():
             
             # Create session
             session_id = str(ObjectId())
-            db.users.update_one(
+            db["mindcare"].users.update_one(
                 {"_id": user["_id"]},
                 {"$set": {"session_id": session_id}}
             )
