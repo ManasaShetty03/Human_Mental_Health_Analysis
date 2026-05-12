@@ -59,14 +59,14 @@ export default function ProfilePage({ setPage, userId = 'demo_user' }: ProfilePa
   const fetchUserStatistics = async () => {
     try {
       setLoading(true);
-      const statsResponse = await fetch(`http://localhost:3000/api/user/${userId}/statistics`);
+      const statsResponse = await fetch(`https://mental-health-analysis-1ljn.onrender.com/api/user/${userId}/statistics`);
       
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
         setStatistics(statsData);
         
         // Fetch recent activity from history
-        const historyResponse = await fetch(`http://localhost:3000/api/user/${userId}/history?limit=5`);
+        const historyResponse = await fetch(`https://mental-health-analysis-1ljn.onrender.com/api/user/${userId}/history?limit=5`);
         if (historyResponse.ok) {
           const historyData = await historyResponse.json();
           setRecentActivity(historyData.history || []);

@@ -59,8 +59,8 @@ export default function HistorySimple({ userId = 'demo_user', onBack }: HistoryP
       
       // Fetch history and statistics in parallel
       const [historyResponse, statsResponse] = await Promise.all([
-        fetch(`http://localhost:3000/api/user/${userId}/history?limit=20`),
-        fetch(`http://localhost:3000/api/user/${userId}/statistics`)
+        fetch(`https://mental-health-analysis-1ljn.onrender.com/api/user/${userId}/history?limit=20`),
+        fetch(`https://mental-health-analysis-1ljn.onrender.com/api/user/${userId}/statistics`)
       ]);
 
       if (!historyResponse.ok || !statsResponse.ok) {

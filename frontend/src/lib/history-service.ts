@@ -1,6 +1,6 @@
 import { Analysis, UserStatistics } from '../types';
 
-const API_BASE_URL = '/api';
+const API_BASE_URL = 'https://mental-health-analysis-1ljn.onrender.com/api';
 
 export interface StoreAnalysisRequest {
   user_id: string;
