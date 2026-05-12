@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, Type } from '@google/genai';
 import { API_BASE_URL } from './api';
 import { Emotion, ModalityResult, MultimodalAnalysis } from "../types";
 import { getGeminiApiKey } from "./api-config";
@@ -15,7 +15,7 @@ async function initializeAI() {
       return;
     }
   }
-  ai = new GoogleGenAI({ apiKey });
+  ai = new GoogleGenerativeAI(apiKey);
 }
 
 // Initialize on module load
