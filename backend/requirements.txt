@@ -1,20 +1,20 @@
-Flask==3.0.0
-Flask-CORS==4.0.0
-python-dotenv==1.0.0
-Werkzeug==3.0.1
-pymongo==4.6.0
+flask
+gunicorn
+pymongo==4.8.0
+certifi
+dnspython
+Flask-CORS
+python-dotenv
+Werkzeug
 
-# Build dependencies for Python 3.14 compatibility
-setuptools>=75.0.0
-wheel>=0.43.0
-
-# Core dependencies for Python 3.14 compatibility
+# Core dependencies
 numpy>=1.26.0
 pandas>=2.2.0
 scikit-learn>=1.5.0
 
-# Audio Processing (compatible versions)
+# Audio Processing
 soundfile>=0.12.1
 
-# Note: TensorFlow, librosa, xgboost, resampy removed for Python 3.14 compatibility
-# These can be added later when Python 3.14 support is available
+# Build dependencies
+setuptools>=75.0.0
+wheel>=0.43.0

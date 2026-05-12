@@ -873,11 +873,13 @@ def create_app():
 
 def start_server():
     app = create_app()
-    PORT = int(os.getenv('PORT', 3000))
-    HOST = os.getenv('HOST', '0.0.0.0')
+    port = int(os.environ.get("PORT", 5000))
     
-    logger.info(f"Starting MindCare Backend on {HOST}:{PORT}")
-    app.run(host=HOST, port=PORT, debug=False)
+    logger.info(f"Starting MindCare Backend on 0.0.0.0:{port}")
+    app.run(host="0.0.0.0", port=port, debug=False)
+
+# Gunicorn app variable for Render deployment
+app = create_app()
 
 if __name__ == "__main__":
     start_server()

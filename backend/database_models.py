@@ -12,6 +12,7 @@ from bson import ObjectId
 import logging
 import os
 from dotenv import load_dotenv
+import certifi
 
 # Load environment variables
 load_dotenv()
@@ -22,7 +23,7 @@ class AnalysisDatabase:
     """Database handler for storing and retrieving analysis results"""
     
     def __init__(self, mongodb_uri: str = None):
-        self.mongodb_uri = mongodb_uri or os.getenv('MONGODB_URI', 'mongodb://localhost:27017/mindcare')
+        self.mongodb_uri = os.getenv("MONGODB_URI")
         self.client = None
         self.db = None
         self.connect()
@@ -30,28 +31,27 @@ class AnalysisDatabase:
     def connect(self) -> bool:
         """Connect to MongoDB"""
         try:
-            # Try different SSL configurations
-            if "mongodb+srv://" in self.mongodb_uri:
-                # Try with explicit SSL settings
-                self.client = MongoClient(
-                    self.mongodb_uri,
-                    tls=True,
-                    tlsAllowInvalidCertificates=True,
-                    connectTimeoutMS=30000,
-                    socketTimeoutMS=30000
-                )
-            else:
-                self.client = MongoClient(self.mongodb_uri)
+            if not self.mongodb_uri:
+                logger.error("❌ MONGODB_URI environment variable not set")
+                self.client = None
+                self.db = None
+                return False
             
-            self.db = self.client.mindcare
+            self.client = MongoClient(
+                self.mongodb_uri,
+                tls=True,
+                tlsCAFile=certifi.where(),
+                serverSelectionTimeoutMS=30000
+            )
+            
+            self.db = self.client["mindcare"]
             
             # Test connection
-            self.client.admin.command('ping')
+            self.client.admin.command("ping")
             logger.info("✅ Connected to MongoDB successfully")
             return True
         except Exception as e:
             logger.error(f"❌ Failed to connect to MongoDB: {str(e)}")
-            # No fallback for production - Render doesn't provide local MongoDB
             self.client = None
             self.db = None
             return False
@@ -59,19 +59,19 @@ class AnalysisDatabase:
     def get_database(self):
         """Get database connection"""
         try:
-            if "mongodb+srv://" in self.mongodb_uri:
-                db = MongoClient(
-                    self.mongodb_uri,
-                    tls=True,
-                    tlsAllowInvalidCertificates=True,
-                    connectTimeoutMS=30000,
-                    socketTimeoutMS=30000
-                )
-            else:
-                db = MongoClient(self.mongodb_uri)
+            if not self.mongodb_uri:
+                logger.error("❌ MONGODB_URI environment variable not set")
+                return None
+            
+            db = MongoClient(
+                self.mongodb_uri,
+                tls=True,
+                tlsCAFile=certifi.where(),
+                serverSelectionTimeoutMS=30000
+            )
             
             # Test the connection
-            db.admin.command('ping')
+            db.admin.command("ping")
             logger.info("✅ Database connected successfully")
             return db
         except Exception as e:
