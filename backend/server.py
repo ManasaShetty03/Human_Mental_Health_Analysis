@@ -249,24 +249,42 @@ def create_app():
     def login():
         """Handle user login"""
         try:
+            logger.info("Login attempt started")
+            
             data = request.get_json()
+            if not data:
+                logger.error("No JSON data received")
+                return jsonify({"error": "No data received"}), 400
+                
             email = data.get('email')
             password = data.get('password')
             
+            logger.info(f"Login attempt for email: {email}")
+            
             if not email or not password:
+                logger.error(f"Missing email or password. Email: {email}, Password provided: {bool(password)}")
                 return jsonify({"error": "Email and password are required"}), 400
             
             db = get_database()
             if not db or not db.is_connected():
+                logger.error("Database connection failed")
                 return jsonify({"error": "Database connection failed"}), 500
             
+            logger.info("Database connected, searching for user")
             user = db.users.find_one({"personal_info.email": email})
+            
             if not user:
+                logger.error(f"User not found for email: {email}")
                 return jsonify({"error": "Invalid credentials"}), 401
+            
+            logger.info(f"User found: {user.get('personal_info', {}).get('email')}")
             
             # Check password (simple comparison for now)
             stored_password = user.get('account_info', {}).get('password_hash')
+            logger.info(f"Password validation - Input: {password[:3]}***, Stored: {stored_password[:3]}*** if stored_password else 'None'")
+            
             if password != stored_password:
+                logger.error("Password mismatch")
                 return jsonify({"error": "Invalid credentials"}), 401
             
             # Create session
@@ -276,6 +294,7 @@ def create_app():
                 {"$set": {"session_id": session_id}}
             )
             
+            logger.info(f"Login successful for user: {email}")
             return jsonify({
                 "success": True,
                 "message": "Login successful",
@@ -288,6 +307,8 @@ def create_app():
             logger.error(f"Login error: {str(e)}")
             logger.error(f"Database object type: {type(db)}")
             logger.error(f"Database connected: {db is not None}")
+            import traceback
+            logger.error(f"Full traceback: {traceback.format_exc()}")
             return jsonify({'error': 'Login failed', 'details': str(e)}), 500
 
     # Backup Voice Analysis Endpoint
