@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Analysis, UserStatistics } from '../types';
+import { API_BASE_URL } from '../lib/api';
 import { ArrowLeft, Calendar, TrendingUp, Brain, Smile, Frown, Meh, Angry, Heart, Activity, Target, Zap, Sparkles, Clock, TrendingUp as TrendUpIcon } from 'lucide-react';
 import PieChart from '../components/PieChart';
 
@@ -59,8 +60,8 @@ export default function HistorySimple({ userId = 'demo_user', onBack }: HistoryP
       
       // Fetch history and statistics in parallel
       const [historyResponse, statsResponse] = await Promise.all([
-        fetch(`https://mental-health-analysis-1ljn.onrender.com/api/user/${userId}/history?limit=20`),
-        fetch(`https://mental-health-analysis-1ljn.onrender.com/api/user/${userId}/statistics`)
+        fetch(`${API_BASE_URL}/api/user/${userId}/history?limit=20`),
+        fetch(`${API_BASE_URL}/api/user/${userId}/statistics`)
       ]);
 
       if (!historyResponse.ok || !statsResponse.ok) {

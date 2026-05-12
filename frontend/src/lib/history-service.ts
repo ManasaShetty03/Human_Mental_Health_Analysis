@@ -1,6 +1,5 @@
 import { Analysis, UserStatistics } from '../types';
-
-const API_BASE_URL = 'https://mental-health-analysis-1ljn.onrender.com/api';
+import { API_BASE_URL } from './api';
 
 export interface StoreAnalysisRequest {
   user_id: string;
@@ -57,7 +56,7 @@ export interface UpdateSessionRequest {
 class HistoryService {
   // Store single analysis
   async storeAnalysis(request: StoreAnalysisRequest): Promise<{ analysis_id: string }> {
-    const response = await fetch(`${API_BASE_URL}/analysis/store`, {
+    const response = await fetch(`${API_BASE_URL}/api/analysis/store`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -74,7 +73,7 @@ class HistoryService {
 
   // Store multimodal analysis
   async storeMultimodalAnalysis(request: StoreMultimodalRequest): Promise<{ analysis_id: string }> {
-    const response = await fetch(`${API_BASE_URL}/analysis/store-multimodal`, {
+    const response = await fetch(`${API_BASE_URL}/api/analysis/store-multimodal`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -100,7 +99,7 @@ class HistoryService {
       ...(analysisType && { analysis_type: analysisType }),
     });
 
-    const response = await fetch(`${API_BASE_URL}/user/${userId}/history?${params}`);
+    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/history?${params}`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch user history: ${response.statusText}`);
@@ -111,7 +110,7 @@ class HistoryService {
 
   // Get specific analysis
   async getUserAnalysis(userId: string, analysisId: string): Promise<Analysis> {
-    const response = await fetch(`${API_BASE_URL}/user/${userId}/analysis/${analysisId}`);
+    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/analysis/${analysisId}`);
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -125,7 +124,7 @@ class HistoryService {
 
   // Get user statistics
   async getUserStatistics(userId: string): Promise<UserStatistics> {
-    const response = await fetch(`${API_BASE_URL}/user/${userId}/statistics`);
+    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/statistics`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch user statistics: ${response.statusText}`);
@@ -144,7 +143,7 @@ class HistoryService {
       limit: limit.toString(),
     });
 
-    const response = await fetch(`${API_BASE_URL}/user/${userId}/sessions?${params}`);
+    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/sessions?${params}`);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch user sessions: ${response.statusText}`);
@@ -155,7 +154,7 @@ class HistoryService {
 
   // Create new session
   async createSession(request: CreateSessionRequest): Promise<{ session_id: string }> {
-    const response = await fetch(`${API_BASE_URL}/session/create`, {
+    const response = await fetch(`${API_BASE_URL}/api/session/create`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -172,7 +171,7 @@ class HistoryService {
 
   // Update session
   async updateSession(sessionId: string, request: UpdateSessionRequest): Promise<{ message: string }> {
-    const response = await fetch(`${API_BASE_URL}/session/${sessionId}/update`, {
+    const response = await fetch(`${API_BASE_URL}/api/session/${sessionId}/update`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -192,7 +191,7 @@ class HistoryService {
 
   // Delete user data (GDPR compliance)
   async deleteUserData(userId: string): Promise<{ message: string }> {
-    const response = await fetch(`${API_BASE_URL}/user/${userId}/delete`, {
+    const response = await fetch(`${API_BASE_URL}/api/user/${userId}/delete`, {
       method: 'DELETE',
     });
 

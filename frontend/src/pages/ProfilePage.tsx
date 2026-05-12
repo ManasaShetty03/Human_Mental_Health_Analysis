@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Analysis } from '../types';
+import { API_BASE_URL } from '../lib/api';
 import { motion } from 'motion/react';
 import { User, Mail, Calendar, Activity, Brain, Heart, Settings, LogOut, Edit2, TrendingUp, Clock, Sparkles, TrendingUp as TrendUpIcon } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
@@ -59,14 +61,14 @@ export default function ProfilePage({ setPage, userId = 'demo_user' }: ProfilePa
   const fetchUserStatistics = async () => {
     try {
       setLoading(true);
-      const statsResponse = await fetch(`https://mental-health-analysis-1ljn.onrender.com/api/user/${userId}/statistics`);
+      const statsResponse = await fetch(`${API_BASE_URL}/api/user/${userId}/statistics`);
       
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
         setStatistics(statsData);
         
         // Fetch recent activity from history
-        const historyResponse = await fetch(`https://mental-health-analysis-1ljn.onrender.com/api/user/${userId}/history?limit=5`);
+        const historyResponse = await fetch(`${API_BASE_URL}/api/user/${userId}/history?limit=5`);
         if (historyResponse.ok) {
           const historyData = await historyResponse.json();
           setRecentActivity(historyData.history || []);
