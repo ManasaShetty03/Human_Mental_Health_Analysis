@@ -94,6 +94,55 @@ const calculateShimmer = (amplitudes: number[]) => {
 
 // --- Components ---
 
+const SidebarToggle = ({ isOpen, onToggle }: { isOpen: boolean, onToggle: () => void }) => (
+  <motion.button
+    onClick={onToggle}
+    className="fixed top-4 left-4 z-50 p-2 rounded-lg bg-[#1a3a6d] text-white shadow-lg hover:bg-[#2d5da1] transition-all duration-300"
+    whileHover={{ scale: 1.1 }}
+    whileTap={{ scale: 0.9 }}
+  >
+    <div className="flex flex-col gap-1">
+      <div className="w-6 h-0.5 bg-white rounded-full transition-all duration-300" />
+      <div className="w-6 h-0.5 bg-white rounded-full transition-all duration-300" />
+      <div className="w-6 h-0.5 bg-white rounded-full transition-all duration-300" />
+    </div>
+  </motion.button>
+);
+
+const Sidebar = ({ isOpen, children, onClose }: { isOpen: boolean, children: React.ReactNode, onClose: () => void }) => (
+  <>
+    {/* Backdrop overlay */}
+    {isOpen && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="fixed inset-0 bg-black/50 z-30"
+        onClick={onClose}
+      />
+    )}
+    
+    {/* Sidebar */}
+    <motion.aside
+      initial={{ x: -300 }}
+      animate={{ x: isOpen ? 0 : -300 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="fixed top-0 left-0 z-40 w-72 h-full bg-[#1a3a6d] shadow-2xl"
+    >
+      <div className="flex flex-col h-full">
+        <div className="flex items-center justify-between p-4 border-b border-[#2d5da1]/20">
+          <h2 className="text-xl font-bold text-white">{t('app_name')}</h2>
+          <SidebarToggle isOpen={isOpen} onToggle={onClose} />
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          {children}
+        </div>
+      </div>
+    </motion.aside>
+  </>
+);
+
 const Atmosphere = () => (
   <div className="fixed inset-0 -z-50 overflow-hidden pointer-events-none">
     <div className="absolute inset-0 bg-silk" />
@@ -249,6 +298,7 @@ function AppContent() {
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [activeTab, setActiveTab] = useState('text');
 
@@ -1481,86 +1531,80 @@ function AppContent() {
       <Atmosphere />
       
       {page !== 'landing' && page !== 'auth' && (
-        <motion.nav 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="sticky top-0 z-50 border-b border-obsidian/[0.03] bg-[#1a3a6d] backdrop-blur-3xl h-16 sm:h-20 shadow-lg"
-        >
-          <div className="container mx-auto px-4 sm:px-6 h-full flex items-center justify-between">
-            <motion.div 
-              className="flex items-center gap-2 sm:gap-3 cursor-pointer group transition-all duration-700"
-              onClick={() => setPage('landing')}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <motion.span 
-                className="font-serif tracking-tight text-white transition-all duration-700 font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl"
-                whileHover={{ color: "#ffffff" }}
-              >
-                {t('app_name')}
-              </motion.span>
-            </motion.div>
-            
-            <div className="flex items-center gap-1 sm:gap-2">
+        <>
+          <SidebarToggle isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
+          <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)}>
+            <div className="space-y-4">
               <motion.button
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setPage('features')}
-                className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg transition-all shadow-sm hover:shadow-md ${
+                whileHover={{ scale: 1.02, x: 4 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  setPage('landing');
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                  page === 'landing' 
+                    ? 'bg-gradient-to-r from-[#2d5da1] to-[#3a6ba5] text-white shadow-lg' 
+                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <Brain className="w-5 h-5" />
+                <span className="font-medium">Home</span>
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.02, x: 4 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  setPage('features');
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   page === 'features' 
                     ? 'bg-gradient-to-r from-[#2d5da1] to-[#3a6ba5] text-white shadow-lg' 
                     : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
-                <motion.div
-                  whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <Brain className="w-4 h-4 sm:w-5 sm:h-5" />
-                </motion.div>
-                <span className="text-xs sm:text-sm md:text-base font-medium">Features</span>
+                <Brain className="w-5 h-5" />
+                <span className="font-medium">Features</span>
               </motion.button>
               
               <motion.button
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setPage('profile')}
-                className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg transition-all shadow-sm hover:shadow-md ${
+                whileHover={{ scale: 1.02, x: 4 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  setPage('profile');
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   page === 'profile' 
                     ? 'bg-gradient-to-r from-[#2d5da1] to-[#3a6ba5] text-white shadow-lg' 
                     : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
-                <motion.div
-                  whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <User className="w-4 h-4 sm:w-5 sm:h-5" />
-                </motion.div>
-                <span className="text-xs sm:text-sm md:text-base font-medium">Profile</span>
+                <User className="w-5 h-5" />
+                <span className="font-medium">Profile</span>
               </motion.button>
               
               <motion.button
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setPage('history')}
-                className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg transition-all shadow-sm hover:shadow-md ${
+                whileHover={{ scale: 1.02, x: 4 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  setPage('history');
+                  setIsSidebarOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                   page === 'history' 
                     ? 'bg-gradient-to-r from-[#2d5da1] to-[#3a6ba5] text-white shadow-lg' 
                     : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
-                <motion.div
-                  whileHover={{ rotate: 360 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <History className="w-4 h-4 sm:w-5 sm:h-5" />
-                </motion.div>
-                <span className="text-xs sm:text-sm md:text-base font-medium">History</span>
+                <History className="w-5 h-5" />
+                <span className="font-medium">History</span>
               </motion.button>
             </div>
-          </div>
-        </motion.nav>
+          </Sidebar>
+        </>
       )}
 
       <main className="container mx-auto px-6 overflow-hidden">
