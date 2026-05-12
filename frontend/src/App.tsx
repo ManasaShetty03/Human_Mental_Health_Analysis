@@ -21,7 +21,8 @@ import {
   Wind,
   Play,
   History,
-  Clock
+  Clock,
+  ChartBar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -252,7 +253,8 @@ function AppContent() {
     { id: 'books', label: t('books_for_students'), icon: Library, action: () => setActiveResource('books') },
     { id: 'music', label: t('study_music'), icon: Music, action: () => setActiveResource('music') },
     { id: 'videos', label: t('videos'), icon: Play, action: () => setActiveResource('videos') },
-    { id: 'breathing', label: t('quick_breathing'), icon: Wind, action: () => setActiveResource('breathing') }
+    { id: 'breathing', label: t('quick_breathing'), icon: Wind, action: () => setActiveResource('breathing') },
+    { id: 'analysis', label: t('analysis'), icon: ChartBar, action: () => setPage('analysis') } // Add analysis page to sidebar navigation
   ];
 
   const Sidebar = ({ isOpen, children, onClose }: { isOpen: boolean, children: React.ReactNode, onClose: () => void }) => (
@@ -271,10 +273,10 @@ function AppContent() {
       
       {/* Sidebar */}
       <motion.aside
-        initial={{ x: -300 }}
-        animate={{ x: isOpen ? 0 : -300 }}
+        initial={{ x: -400 }} // Increase sidebar width
+        animate={{ x: isOpen ? 0 : -400 }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="fixed top-0 left-0 z-40 w-72 h-full bg-[#1a3a6d] shadow-2xl"
+        className="fixed top-0 left-0 z-40 w-80 h-full bg-[#1a3a6d] shadow-2xl" // Increase sidebar width
       >
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-4 border-b border-[#2d5da1]/20">
@@ -1533,6 +1535,38 @@ function AppContent() {
       
       {page !== 'landing' && page !== 'auth' && (
         <>
+          {/* Top Bar with Logo and App Name */}
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="sticky top-0 z-50 border-b border-obsidian/[0.03] bg-[#1a3a6d] backdrop-blur-3xl h-16 sm:h-20 shadow-lg"
+          >
+            <div className="container mx-auto px-4 sm:px-6 h-full flex items-center justify-center">
+              <motion.div 
+                className="flex items-center gap-2 sm:gap-3 cursor-pointer group transition-all duration-700"
+                onClick={() => setPage('landing')}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <motion.img
+                  src="/logo.png"
+                  alt="MindCare Logo"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5, delay: 0.2 }}
+                  className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12"
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                />
+                <motion.span 
+                  className="font-serif tracking-tight text-white transition-all duration-700 font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl"
+                  whileHover={{ color: "#ffffff" }}
+                >
+                  {t('app_name')}
+                </motion.span>
+              </motion.div>
+            </div>
+          </motion.div>
+
           <SidebarToggle isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
           <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)}>
             <div className="space-y-4">
@@ -1540,17 +1574,17 @@ function AppContent() {
                 whileHover={{ scale: 1.02, x: 4 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
-                  setPage('landing');
+                  setPage('analysis');
                   setIsSidebarOpen(false);
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                  page === 'landing' 
+                  page === 'analysis' 
                     ? 'bg-gradient-to-r from-[#2d5da1] to-[#3a6ba5] text-white shadow-lg' 
                     : 'text-white/80 hover:text-white hover:bg-white/10'
                 }`}
               >
-                <Brain className="w-5 h-5" />
-                <span className="font-medium">Home</span>
+                <ChartBar className="w-5 h-5" />
+                <span className="font-medium">Analysis</span>
               </motion.button>
               
               <motion.button

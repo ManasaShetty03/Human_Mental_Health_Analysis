@@ -20,9 +20,25 @@ const LandingPage: React.FC<LandingPageProps> = ({ setPage }) => {
              animate={{ opacity: 1, y: 0 }}
              transition={{ duration: 1 }}
           >
-            <h1 className="text-[16vw] sm:text-[12vw] md:text-[8vw] lg:text-[6vw] font-serif tracking-tight text-[#1a3a6d] leading-none mb-3 sm:mb-4">
-              {t('app_name')}
-            </h1>
+            <div className="flex flex-col items-center mb-3 sm:mb-4">
+              <motion.img
+                src="/logo.png"
+                alt="MindCare Logo"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 1.2, delay: 0.3 }}
+                className="w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-40 lg:h-40"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+              />
+              <motion.h1 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 1, delay: 0.5 }}
+                className="text-[16vw] sm:text-[12vw] md:text-[8vw] lg:text-[6vw] font-serif tracking-tight text-[#1a3a6d] leading-none"
+              >
+                {t('app_name')}
+              </motion.h1>
+            </div>
           </motion.div>
 
           {/* Description */}
@@ -32,7 +48,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ setPage }) => {
             transition={{ delay: 0.5, duration: 1 }}
             className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-[#2d5da1] max-w-2xl sm:max-w-3xl mx-auto font-light leading-snug px-2 sm:px-4"
           >
-            Your personal student emotional wellness companion. Analyze your emotions through text, voice, and multimodal analysis for personalized wellness support.
+           
           </motion.p>
 
           {/* Actions */}
@@ -49,7 +65,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ setPage }) => {
               Login
             </Button>
           </motion.div>
-        </div>
+
+                  </div>
       </div>
 
           </div>

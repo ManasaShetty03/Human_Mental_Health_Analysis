@@ -188,7 +188,7 @@ export default function ProfilePage({ setPage, userId = 'demo_user' }: ProfilePa
                   transition={{ delay: 0.4 }}
                 >
                   <Mail className="w-4 h-4" />
-                  <span>{user?.email || 'user@example.com'}</span>
+                  <span>{user?.name || user?.email?.split('@')[0] || 'User'}</span>
                 </motion.div>
 
                 {/* Quick Actions */}
