@@ -117,6 +117,21 @@ class AnalysisDatabase:
         """Check if database is connected"""
         return self.client is not None and self.db is not None
     
+    @property
+    def users(self):
+        """Get users collection"""
+        return self.db.users
+    
+    @property
+    def analyses(self):
+        """Get analyses collection"""
+        return self.db.analyses
+    
+    @property
+    def sessions(self):
+        """Get sessions collection"""
+        return self.db.sessions
+    
     # ==========================================================
     # USER ANALYSIS STORAGE
     # ==========================================================

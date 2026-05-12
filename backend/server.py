@@ -193,7 +193,7 @@ def create_app():
                 return jsonify({'error': 'Missing required personal info fields'}), 400
             
             # Check if user already exists
-            if db.db.users.find_one({'personal_info.email': personal_info['email']}):
+            if db.users.find_one({'personal_info.email': personal_info['email']}):
                 return jsonify({'error': 'User with this email already exists'}), 400
             
             # Create user document
@@ -226,7 +226,7 @@ def create_app():
             }
             
             # Insert user
-            result = db["mindcare"].users.insert_one(user_doc)
+            result = db.users.insert_one(user_doc)
             
             return jsonify({
                 'message': 'User created successfully',
@@ -260,7 +260,7 @@ def create_app():
             if not db or not db.is_connected():
                 return jsonify({"error": "Database connection failed"}), 500
             
-            user = db["mindcare"].users.find_one({"email": email})
+            user = db.users.find_one({"email": email})
             if not user:
                 return jsonify({"error": "Invalid credentials"}), 401
             
@@ -270,7 +270,7 @@ def create_app():
             
             # Create session
             session_id = str(ObjectId())
-            db["mindcare"].users.update_one(
+            db.users.update_one(
                 {"_id": user["_id"]},
                 {"$set": {"session_id": session_id}}
             )
@@ -567,7 +567,7 @@ def create_app():
                 return jsonify({'error': 'Database not connected'}), 500
             
             # Get analysis
-            analysis = db.get_user_analysis_by_id(user_id, analysis_id)
+            analysis = db.analyses.find_one({'_id': ObjectId(analysis_id), 'user_id': user_id})
             
             if not analysis:
                 return jsonify({'error': 'Analysis not found'}), 404
@@ -600,9 +600,9 @@ def create_app():
             db = get_database()
             
             # Get user information - try email first, then user_id
-            user = db.db.users.find_one({'personal_info.email': user_id})
+            user = db.users.find_one({'personal_info.email': user_id})
             if not user:
-                user = db.db.users.find_one({'account_info.user_id': user_id})
+                user = db.users.find_one({'account_info.user_id': user_id})
             if not user:
                 return jsonify({'error': 'User not found'}), 404
             
@@ -610,7 +610,7 @@ def create_app():
             statistics = db.get_user_statistics(user_id)
             
             # Get recent analyses for achievements calculation
-            recent_analyses = list(db.db.analyses.find({'user_id': user_id}).sort('timestamp', -1).limit(50))
+            recent_analyses = list(db.analyses.find({'user_id': user_id}).sort('timestamp', -1).limit(50))
             
             # Calculate achievements
             achievements = []
@@ -695,10 +695,10 @@ def create_app():
             
             # Try to find user by email first, then by user_id
             user_filter = {'personal_info.email': user_id}
-            if not db.db.users.find_one(user_filter):
+            if not db.users.find_one(user_filter):
                 user_filter = {'account_info.user_id': user_id}
             
-            result = db.db.users.update_one(
+            result = db.users.update_one(
                 user_filter,
                 {'$set': update_data}
             )
