@@ -400,6 +400,18 @@ def create_app():
         """Simple test endpoint to verify route registration"""
         return jsonify({"message": "Test endpoint working", "timestamp": str(datetime.utcnow())})
 
+    @app.route("/api/routes", methods=["GET"])
+    def list_routes():
+        """List all registered routes to debug routing issues"""
+        routes = []
+        for rule in app.url_map.iter_rules():
+            routes.append({
+                "endpoint": rule.endpoint,
+                "methods": list(rule.methods),
+                "rule": str(rule)
+            })
+        return jsonify({"routes": routes})
+
     @app.route("/api/test/post", methods=["POST"])
     def test_post_endpoint():
         """Simple POST test endpoint to verify POST routes work"""
