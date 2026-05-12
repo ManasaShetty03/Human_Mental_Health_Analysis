@@ -38,25 +38,9 @@ class AnalysisDatabase:
                 self.db = None
                 return False
             
-            # Parse and encode the URI to handle special characters
-            if "@" in self.mongodb_uri and "://" in self.mongodb_uri:
-                # Extract the part before @ to encode username/password
-                auth_part = self.mongodb_uri.split("://")[1].split("@")[0]
-                if ":" in auth_part:
-                    username, password = auth_part.split(":", 1)
-                    encoded_username = quote_plus(username)
-                    encoded_password = quote_plus(password)
-                    
-                    # Reconstruct the URI with encoded credentials
-                    uri_parts = self.mongodb_uri.split("://")[1].split("@")[1]
-                    encoded_uri = f"mongodb+srv://{encoded_username}:{encoded_password}@{uri_parts}"
-                else:
-                    encoded_uri = self.mongodb_uri
-            else:
-                encoded_uri = self.mongodb_uri
-            
+            # Try original URI first
             self.client = MongoClient(
-                encoded_uri,
+                self.mongodb_uri,
                 tls=True,
                 tlsCAFile=certifi.where(),
                 serverSelectionTimeoutMS=30000
