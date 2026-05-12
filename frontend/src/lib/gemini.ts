@@ -1,9 +1,9 @@
-import { GoogleGenerativeAI, Type } from '@google/genai';
+import GoogleAI from '@google/genai';
 import { API_BASE_URL } from './api';
 import { Emotion, ModalityResult, MultimodalAnalysis } from "../types";
 import { getGeminiApiKey } from "./api-config";
 
-let ai: GoogleGenerativeAI | null = null;
+let ai: GoogleAI | null = null;
 let apiKey: string | null = null;
 
 // Initialize AI when API key is available
@@ -15,10 +15,10 @@ async function initializeAI() {
       return;
     }
   }
-  ai = new GoogleGenerativeAI(apiKey);
+  ai = new GoogleAI(apiKey);
 }
 
-// Initialize on module load
+// Initialize on module load - Fixed GoogleGenAI import issue
 initializeAI();
 
 export interface AnalysisResult {
@@ -136,58 +136,7 @@ export async function analyzeMultimodal(
       model: "gemini-2.5-flash",
       contents: { parts: contents },
       config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            face: {
-              type: Type.OBJECT,
-              properties: {
-                emotion: { type: Type.STRING, enum: ["Happy", "Sad", "Angry", "Neutral"] },
-                confidence: { type: Type.NUMBER }
-              }
-            },
-            voice: {
-              type: Type.OBJECT,
-              properties: {
-                emotion: { type: Type.STRING, enum: ["Happy", "Sad", "Angry", "Neutral"] },
-                confidence: { type: Type.NUMBER },
-                uncertain: { type: Type.BOOLEAN }
-              }
-            },
-            text: {
-              type: Type.OBJECT,
-              properties: {
-                emotion: { type: Type.STRING, enum: ["Happy", "Sad", "Angry", "Neutral"] },
-                confidence: { type: Type.NUMBER }
-              }
-            },
-            overallEmotion: { type: Type.STRING, enum: ["Happy", "Sad", "Angry", "Neutral"] },
-            severity: { type: Type.STRING, enum: ["Low", "Medium", "High"] },
-            confidence: { type: Type.NUMBER },
-            suggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
-            masking: {
-              type: Type.OBJECT,
-              properties: {
-                detected: { type: Type.BOOLEAN },
-                explanation: { type: Type.STRING },
-                authenticity_score: { type: Type.NUMBER }
-              },
-              required: ["detected", "explanation", "authenticity_score"]
-            },
-            fusion: {
-              type: Type.OBJECT,
-              properties: {
-                final_emotion: { type: Type.STRING, enum: ["Happy", "Sad", "Angry", "Neutral"] },
-                confidence: { type: Type.NUMBER },
-                authenticity_score: { type: Type.NUMBER },
-                conflict: { type: Type.BOOLEAN },
-                conflict_message: { type: Type.STRING }
-              }
-            }
-          },
-          required: ["face", "voice", "text", "fusion", "overallEmotion", "severity", "confidence", "masking", "suggestions"]
-        }
+        responseMimeType: "application/json"
       }
     });
     
@@ -257,21 +206,7 @@ export async function generateFinalSummary(history: any[], language: string = 'e
       model: "gemini-2.5-flash",
       contents: prompt,
       config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            overall_emotion: { type: Type.STRING, enum: ["Happy", "Sad", "Angry", "Neutral"] },
-            confidence: { type: Type.NUMBER },
-            emotion_trend: { type: Type.STRING },
-            observations: { type: Type.ARRAY, items: { type: Type.STRING } },
-            conflict_detected: { type: Type.BOOLEAN },
-            masking_analysis: { type: Type.STRING },
-            uncertainty_detected: { type: Type.BOOLEAN },
-            suggestions: { type: Type.ARRAY, items: { type: Type.STRING } }
-          },
-          required: ["overall_emotion", "confidence", "emotion_trend", "observations", "conflict_detected", "masking_analysis", "uncertainty_detected", "suggestions"]
-        }
+        responseMimeType: "application/json"
       }
     });
     
@@ -326,19 +261,7 @@ export async function analyzeFace(emotion: string, confidence: number, language:
       - Avoid generic advice; instead, offer student-specific techniques (e.g., "Try discreet breathing exercises during class" instead of just "breathe").
       - Ensure diversity in suggestions: academic (classroom focus), physical (campus activities), mental (student mindfulness), social (study group interactions), creative (student projects).`,
       config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            isMeaningless: { type: Type.BOOLEAN },
-            emotion: { type: Type.STRING, enum: ["Happy", "Sad", "Angry", "Neutral"] },
-            confidence: { type: Type.NUMBER },
-            uncertain: { type: Type.BOOLEAN },
-            severity: { type: Type.STRING, enum: ["Low", "Medium", "High"] },
-            suggestions: { type: Type.ARRAY, items: { type: Type.STRING } }
-          },
-          required: ["emotion", "confidence", "uncertain", "suggestions", "isMeaningless", "severity"]
-        }
+        responseMimeType: "application/json"
       }
     });
 
@@ -471,19 +394,7 @@ export async function analyzeText(text: string, language: string = 'en'): Promis
       - Ensure diversity in suggestions: academic (study techniques), physical (campus activities), mental (mindfulness for students), social (study groups, campus connections), creative (student projects, hobbies).
       - Reference student-specific contexts: classes, exams, assignments, dorm life, campus resources, study spaces.`,
       config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            isMeaningless: { type: Type.BOOLEAN },
-            emotion: { type: Type.STRING, enum: ["Happy", "Sad", "Angry", "Neutral"] },
-            confidence: { type: Type.NUMBER },
-            uncertain: { type: Type.BOOLEAN },
-            severity: { type: Type.STRING, enum: ["Low", "Medium", "High"] },
-            suggestions: { type: Type.ARRAY, items: { type: Type.STRING } }
-          },
-          required: ["emotion", "confidence", "uncertain", "suggestions", "isMeaningless", "severity"]
-        }
+        responseMimeType: "application/json"
       }
     });
 
