@@ -916,17 +916,23 @@ def create_app():
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
     def serve_frontend(path):
-        # Don't catch API routes
+        # Don't catch API routes - return 404 for unknown API endpoints
         if path.startswith("api/"):
             return jsonify({"error": "API endpoint not found"}), 404
         
+        # Only handle frontend routes
         try:
             if path and (frontend_dist_path / path).exists():
                 return send_from_directory(frontend_dist_path, path)
+            elif not path:  # Root path
+                if (frontend_dist_path / "index.html").exists():
+                    return send_file(frontend_dist_path / "index.html")
+                else:
+                    return jsonify({"message": "MindCare Backend API is running", "version": "1.0.0"}), 200
             else:
-                return send_file(frontend_dist_path / "index.html")
+                return jsonify({"error": "Frontend not built"}), 404
         except FileNotFoundError:
-            return jsonify({"error": "Frontend not built"}), 404
+            return jsonify({"message": "MindCare Backend API is running", "version": "1.0.0"}), 200
     
     # Error handlers
     @app.errorhandler(404)
