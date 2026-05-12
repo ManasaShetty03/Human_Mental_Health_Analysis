@@ -912,10 +912,14 @@ def create_app():
     current_dir = Path(__file__).parent
     frontend_dist_path = current_dir.parent / "frontend" / "dist"
     
-    # Serve frontend static files
+    # Serve frontend static files (catch-all route - must be last)
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
     def serve_frontend(path):
+        # Don't catch API routes
+        if path.startswith("api/"):
+            return jsonify({"error": "API endpoint not found"}), 404
+        
         try:
             if path and (frontend_dist_path / path).exists():
                 return send_from_directory(frontend_dist_path, path)
