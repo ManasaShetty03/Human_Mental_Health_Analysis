@@ -1,3 +1,5 @@
+import { API_BASE_URL } from './api';
+
 interface ApiConfig {
   GEMINI_API_KEY: string | null;
 }
@@ -10,7 +12,7 @@ export async function getApiConfig(): Promise<ApiConfig> {
   }
 
   try {
-    const response = await fetch('https://mental-health-analysis-1ljn.onrender.com/api/config');
+    const response = await fetch(`${API_BASE_URL}/api/config`);
     if (!response.ok) {
       throw new Error('Failed to fetch API configuration');
     }
