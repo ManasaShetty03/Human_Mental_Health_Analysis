@@ -284,7 +284,9 @@ def create_app():
             
         except Exception as e:
             logger.error(f"Login error: {str(e)}")
-            return jsonify({'error': 'Login failed'}), 500
+            logger.error(f"Database object type: {type(db)}")
+            logger.error(f"Database connected: {db is not None}")
+            return jsonify({'error': 'Login failed', 'details': str(e)}), 500
 
     # Backup Voice Analysis Endpoint
     @app.route('/api/backup-voice-analysis', methods=['POST'])
