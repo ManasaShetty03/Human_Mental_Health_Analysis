@@ -35,9 +35,7 @@ class AnalysisDatabase:
                 # Try with explicit SSL settings
                 self.client = MongoClient(
                     self.mongodb_uri,
-                    ssl=True,
-                    ssl_cert_reqs='CERT_NONE',
-                    tlsAllowInvalidHostnames=True,
+                    tls=True,
                     tlsAllowInvalidCertificates=True,
                     connectTimeoutMS=30000,
                     socketTimeoutMS=30000
@@ -53,30 +51,31 @@ class AnalysisDatabase:
             return True
         except Exception as e:
             logger.error(f"❌ Failed to connect to MongoDB: {str(e)}")
-            # Fallback to local database for development
-            try:
-                self.client = MongoClient('mongodb://localhost:27017/mindcare')
-                self.db = self.client.mindcare
-                self.client.admin.command('ping')
-                logger.info("✅ Connected to local MongoDB successfully")
-                return True
-            except Exception as local_e:
-                logger.error(f"❌ Failed to connect to local MongoDB: {str(local_e)}")
-                # Create in-memory database as last resort
-                self.client = None
-                self.db = None
-                return False
+            # No fallback for production - Render doesn't provide local MongoDB
+            self.client = None
+            self.db = None
+            return False
     
     def get_database(self):
         """Get database connection"""
         try:
-            db = MongoClient(self.mongodb_uri)
+            if "mongodb+srv://" in self.mongodb_uri:
+                db = MongoClient(
+                    self.mongodb_uri,
+                    tls=True,
+                    tlsAllowInvalidCertificates=True,
+                    connectTimeoutMS=30000,
+                    socketTimeoutMS=30000
+                )
+            else:
+                db = MongoClient(self.mongodb_uri)
+            
             # Test the connection
             db.admin.command('ping')
-            logger.info("Database connected successfully")
+            logger.info("✅ Database connected successfully")
             return db
         except Exception as e:
-            logger.error(f"Database connection failed: {str(e)}")
+            logger.error(f"❌ Database connection failed: {str(e)}")
             return None
     
     def is_connected(self) -> bool:
