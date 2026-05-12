@@ -400,6 +400,12 @@ def create_app():
         """Simple test endpoint to verify route registration"""
         return jsonify({"message": "Test endpoint working", "timestamp": str(datetime.utcnow())})
 
+    @app.route("/api/test/post", methods=["POST"])
+    def test_post_endpoint():
+        """Simple POST test endpoint to verify POST routes work"""
+        data = request.get_json()
+        return jsonify({"message": "POST test working", "received_data": data})
+
     @app.route("/api/auth/login", methods=["POST"])
     def auth_login():
         """Alternative login endpoint to bypass routing issues"""
