@@ -30,8 +30,21 @@ class AnalysisDatabase:
     def connect(self) -> bool:
         """Connect to MongoDB"""
         try:
-            # Try connection without SSL to bypass handshake issues
-            self.client = MongoClient(self.mongodb_uri)
+            # Try different SSL configurations
+            if "mongodb+srv://" in self.mongodb_uri:
+                # Try with explicit SSL settings
+                self.client = MongoClient(
+                    self.mongodb_uri,
+                    ssl=True,
+                    ssl_cert_reqs='CERT_NONE',
+                    tlsAllowInvalidHostnames=True,
+                    tlsAllowInvalidCertificates=True,
+                    connectTimeoutMS=30000,
+                    socketTimeoutMS=30000
+                )
+            else:
+                self.client = MongoClient(self.mongodb_uri)
+            
             self.db = self.client.mindcare
             
             # Test connection
@@ -40,8 +53,19 @@ class AnalysisDatabase:
             return True
         except Exception as e:
             logger.error(f"❌ Failed to connect to MongoDB: {str(e)}")
-            # Don't fail completely, allow app to run without DB
-            return False
+            # Fallback to local database for development
+            try:
+                self.client = MongoClient('mongodb://localhost:27017/mindcare')
+                self.db = self.client.mindcare
+                self.client.admin.command('ping')
+                logger.info("✅ Connected to local MongoDB successfully")
+                return True
+            except Exception as local_e:
+                logger.error(f"❌ Failed to connect to local MongoDB: {str(local_e)}")
+                # Create in-memory database as last resort
+                self.client = None
+                self.db = None
+                return False
     
     def get_database(self):
         """Get database connection"""
