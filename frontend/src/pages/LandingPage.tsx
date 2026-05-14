@@ -48,17 +48,18 @@ const LandingPage: React.FC<LandingPageProps> = ({ setPage }) => {
             transition={{ delay: 0.5, duration: 1 }}
             className="text-lg sm:text-xl md:text-2xl lg:text-3xl text-[#2d5da1] max-w-2xl sm:max-w-3xl mx-auto font-light leading-snug px-2 sm:px-4"
           >
-           
+           An emotional wellness platform that analyzes emotions through text, voice, and facial expressions to deliver real-time insights, empathetic guidance, and personalized mental wellness support.
+
           </motion.p>
 
-          {/* Actions */}
+          {/* Actions - LOTS OF SPACE ADDED ABOVE THE LOGIN BUTTON */}
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1, duration: 1 }}
-            className="flex flex-col items-center gap-4 sm:gap-6 w-full max-w-sm mx-auto"
+            className="flex flex-col items-center gap-4 sm:gap-6 w-full max-w-sm mx-auto mt-24 md:mt-32 lg:mt-48 pb-12"
           >
-                        <Button 
+            <Button 
               className="w-full sm:w-72 h-12 sm:h-14 rounded-2xl bg-[#1a3a6d] text-white border-2 border-[#1a3a6d]/20 hover:bg-[#2d5da1] text-base sm:text-xl font-medium flex items-center justify-center gap-2 sm:gap-3 soft-shadow transition-all"
               onClick={() => setPage('auth')}
             >

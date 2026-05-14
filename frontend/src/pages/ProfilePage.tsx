@@ -108,6 +108,14 @@ export default function ProfilePage({ setPage, userId = 'demo_user' }: ProfilePa
     }
   };
 
+  const getMostFrequentEmotion = () => {
+    if (!statistics?.emotion_distribution) return 'None';
+    const entries = Object.entries(statistics.emotion_distribution);
+    if (entries.length === 0) return 'None';
+    const mostFrequent = entries.reduce((a, b) => a[1] > b[1] ? a : b)[0];
+    return mostFrequent.charAt(0).toUpperCase() + mostFrequent.slice(1);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-6">
@@ -188,7 +196,7 @@ export default function ProfilePage({ setPage, userId = 'demo_user' }: ProfilePa
                   transition={{ delay: 0.4 }}
                 >
                   <Mail className="w-4 h-4" />
-                  <span>{user?.name || user?.email?.split('@')[0] || 'User'}</span>
+                  <span>{user?.email || 'No email provided'}</span>
                 </motion.div>
 
                 {/* Quick Actions */}
@@ -275,9 +283,9 @@ export default function ProfilePage({ setPage, userId = 'demo_user' }: ProfilePa
                     animate={{ scale: 1 }}
                     transition={{ delay: 0.8, type: "spring" }}
                   >
-                    {Math.round(statistics?.average_confidence || 0)}%
+                    {getMostFrequentEmotion()}
                   </motion.div>
-                  <div className="text-blue-100">Avg. Confidence</div>
+                  <div className="text-blue-100">Top Emotion</div>
                 </motion.div>
               </div>
             </motion.div>

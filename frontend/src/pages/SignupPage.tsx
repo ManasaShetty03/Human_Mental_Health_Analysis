@@ -31,7 +31,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ setPage }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (authMode === 'signup') {
-      if (!authForm.name || !authForm.email || !authForm.studentId || !authForm.password) {
+      if (!authForm.name || !authForm.email || !authForm.password) {
         toast.error("Please fill in all required fields");
         return;
       }
@@ -110,7 +110,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ setPage }) => {
           // Set user context after successful login
           const userData = {
             id: loginData.user_id || authForm.email,
-            name: authForm.email.split('@')[0],
+            name: loginData.name || authForm.email.split('@')[0],
             email: authForm.email,
             studentId: null
           };
@@ -160,49 +160,38 @@ const SignupPage: React.FC<SignupPageProps> = ({ setPage }) => {
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
             {authMode === 'signup' && (
-              <>
-                <div className="space-y-2 sm:space-y-3">
-                  <Label className="text-sm sm:text-base font-semibold text-[#1a3a6d]">Name</Label>
-                  <Input
-                    type="text"
-                    value={authForm.name}
-                    onChange={(e) => setAuthForm({...authForm, name: e.target.value})}
-                    placeholder="Enter your full name"
-                    className="h-12 sm:h-14 bg-white/70 border-[#1a3a6d]/30 focus:border-[#1a3a6d] focus:ring-2 focus:ring-[#1a3a6d]/20 rounded-xl text-base sm:text-lg transition-all"
-                  />
-                </div>
-                
-                <div className="space-y-2 sm:space-y-3">
-                  <Label className="text-sm sm:text-base font-semibold text-[#1a3a6d]">Student ID</Label>
-                  <Input
-                    type="text"
-                    value={authForm.studentId}
-                    onChange={(e) => setAuthForm({...authForm, studentId: e.target.value})}
-                    placeholder="Enter your student ID"
-                    className="h-12 sm:h-14 bg-white/70 border-[#1a3a6d]/30 focus:border-[#1a3a6d] focus:ring-2 focus:ring-[#1a3a6d]/20 rounded-xl text-base sm:text-lg transition-all"
-                  />
-                </div>
-              </>
+              <div className="space-y-2 sm:space-y-3">
+                <Label className="text-sm sm:text-base font-semibold text-[#1a3a6d]">Name</Label>
+                <Input
+                  type="text"
+                  value={authForm.name}
+                  onChange={(e) => setAuthForm({...authForm, name: e.target.value})}
+                  placeholder="Enter your full name"
+                  className="h-12 sm:h-14 bg-white/70 border-[#1a3a6d]/30 focus:border-[#1a3a6d] focus:ring-2 focus:ring-[#1a3a6d]/20 rounded-xl text-base sm:text-lg transition-all"
+                />
+              </div>
             )}
             
             <div className="space-y-2 sm:space-y-3">
-              <Label className="text-sm sm:text-base font-semibold text-[#1a3a6d]">Email</Label>
+              <Label className="text-sm sm:text-base font-semibold text-[#1a3a6d]">Email ID</Label>
               <Input
                 type="email"
                 value={authForm.email}
                 onChange={(e) => setAuthForm({...authForm, email: e.target.value})}
-                placeholder="Enter your email"
+                placeholder="Enter your email ID"
                 className="h-12 sm:h-14 bg-white/70 border-[#1a3a6d]/30 focus:border-[#1a3a6d] focus:ring-2 focus:ring-[#1a3a6d]/20 rounded-xl text-base sm:text-lg transition-all"
               />
             </div>
             
             <div className="space-y-2 sm:space-y-3">
-              <Label className="text-sm sm:text-base font-semibold text-[#1a3a6d]">Password</Label>
+              <Label className="text-sm sm:text-base font-semibold text-[#1a3a6d]">
+                {authMode === 'signup' ? 'Create Password' : 'Password'}
+              </Label>
               <Input
                 type="password"
                 value={authForm.password}
                 onChange={(e) => setAuthForm({...authForm, password: e.target.value})}
-                placeholder="Enter your password"
+                placeholder={authMode === 'signup' ? 'Create your password' : 'Enter your password'}
                 className="h-12 sm:h-14 bg-white/70 border-[#1a3a6d]/30 focus:border-[#1a3a6d] focus:ring-2 focus:ring-[#1a3a6d]/20 rounded-xl text-base sm:text-lg transition-all"
               />
             </div>

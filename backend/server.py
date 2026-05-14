@@ -19,6 +19,64 @@ from backup_face_analysis import get_backup_face_analyzer
 # Import database models
 from database_models import get_database, AnalysisDatabase
 
+def detect_emotional_conflict(analysis_results):
+    """
+    Detect emotional conflicts between different modalities
+    Returns conflict_detected flag and masking_analysis text
+    """
+    if not analysis_results or len(analysis_results) < 2:
+        return False, ""
+    
+    # Extract emotions from each modality
+    emotions = {}
+    for result in analysis_results:
+        modality = result.get('modality', 'unknown')
+        emotion = result.get('emotion', 'Neutral')
+        emotions[modality] = emotion
+    
+    # Check for conflicts between modalities
+    conflicts = []
+    masking_analysis_parts = []
+    
+    # Voice vs Text conflict (emotional masking)
+    if 'voice' in emotions and 'text' in emotions:
+        if emotions['voice'] != emotions['text']:
+            conflicts.append('voice_text')
+            masking_analysis_parts.append(
+                f"Spoken emotion ({emotions['voice']}) differs from text emotion ({emotions['text']}), "
+                f"indicating possible emotional masking where the person is hiding their true feelings."
+            )
+    
+    # Face vs Voice conflict
+    if 'face' in emotions and 'voice' in emotions:
+        if emotions['face'] != emotions['voice']:
+            conflicts.append('face_voice')
+            masking_analysis_parts.append(
+                f"Facial emotion ({emotions['face']}) differs from spoken emotion ({emotions['voice']}), "
+                f"suggesting emotional incongruence or masking."
+            )
+    
+    # Face vs Text conflict
+    if 'face' in emotions and 'text' in emotions:
+        if emotions['face'] != emotions['text']:
+            conflicts.append('face_text')
+            masking_analysis_parts.append(
+                f"Facial emotion ({emotions['face']}) differs from text emotion ({emotions['text']}), "
+                f"indicating potential emotional masking or incongruence."
+            )
+    
+    # If all three modalities are present and all differ
+    if len(emotions) == 3 and len(set(emotions.values())) == 3:
+        masking_analysis_parts.append(
+            "All three modalities (voice, text, face) show different emotions, "
+            "indicating significant emotional complexity or deliberate masking."
+        )
+    
+    conflict_detected = len(conflicts) > 0
+    masking_analysis = " ".join(masking_analysis_parts) if masking_analysis_parts else ""
+    
+    return conflict_detected, masking_analysis
+
 # Load environment variables
 load_dotenv()
 
@@ -383,6 +441,7 @@ def create_app():
                 "success": True,
                 "message": "Login successful",
                 "user_id": str(user["_id"]),
+                "name": user["personal_info"].get("name", ""),
                 "email": user["personal_info"]["email"],
                 "session_id": session_id
             })
@@ -497,6 +556,11 @@ def create_app():
                 is_base64=True,
                 language=language
             )
+            
+            # Add conflict detection fields for single modality
+            result['conflict_detected'] = False
+            result['masking_analysis'] = ""
+            
             if db.is_connected() and 'error' not in result:
                 try:
                     analysis_data = {
@@ -513,6 +577,8 @@ def create_app():
                         'model_used': result.get('model_used', 'CNN+BiLSTM Backup'),
                         'language': language,
                         'processing_time': 0.0,
+                        'conflict_detected': result.get('conflict_detected', False),
+                        'masking_analysis': result.get('masking_analysis', ''),
                         'metadata': {
                             'backup_analysis': True,
                             'audio_length': len(audio_base64)
@@ -559,6 +625,10 @@ def create_app():
             # Analyze face
             result = backup_analyzer.analyze_face(image_base64, is_base64=True, language=language)
             
+            # Add conflict detection fields for single modality
+            result['conflict_detected'] = False
+            result['masking_analysis'] = ""
+            
             # Store analysis in database
             if db.is_connected() and 'error' not in result:
                 try:
@@ -576,6 +646,8 @@ def create_app():
                         'model_used': result.get('model_used', 'EfficientNetB0 Backup'),
                         'language': language,
                         'processing_time': 0.0,
+                        'conflict_detected': result.get('conflict_detected', False),
+                        'masking_analysis': result.get('masking_analysis', ''),
                         'metadata': {
                             'backup_analysis': True,
                             'image_size': len(image_base64)
@@ -622,6 +694,10 @@ def create_app():
             # Analyze text
             result = backup_analyzer.analyze_text(text, language)
             
+            # Add conflict detection fields for single modality
+            result['conflict_detected'] = False
+            result['masking_analysis'] = ""
+            
             # Store analysis in database
             if db.is_connected() and 'error' not in result:
                 try:
@@ -639,6 +715,8 @@ def create_app():
                         'model_used': result.get('model_used', 'RoBERTa Backup'),
                         'language': language,
                         'processing_time': 0.0,
+                        'conflict_detected': result.get('conflict_detected', False),
+                        'masking_analysis': result.get('masking_analysis', ''),
                         'metadata': {
                             'backup_analysis': True,
                             'original_text_length': len(text)
@@ -659,6 +737,99 @@ def create_app():
         except Exception as e:
             logger.error(f"Backup text analysis error: {str(e)}")
             return jsonify({'error': 'Backup text analysis failed'}), 500
+
+    # Multimodal Analysis Endpoint
+    @app.route('/api/multimodal-analysis', methods=['POST'])
+    def multimodal_analysis():
+        """Analyze multiple modalities (voice, text, face) and detect emotional masking/conflicts"""
+        try:
+            data = request.get_json()
+            audio_base64 = data.get('audio_base64')
+            text = data.get('text')
+            image_base64 = data.get('image_base64')
+            language = data.get('language', 'en')
+            user_id = data.get('user_id', 'demo_user')
+            
+            if not any([audio_base64, text, image_base64]):
+                return jsonify({'error': 'At least one modality (audio, text, or image) must be provided'}), 400
+            
+            analysis_results = []
+            
+            # Analyze voice if provided
+            if audio_base64:
+                voice_analyzer = get_backup_analyzer()
+                if voice_analyzer.is_available():
+                    voice_result = voice_analyzer.analyze_with_fallback(audio_base64, is_base64=True, language=language)
+                    voice_result['modality'] = 'voice'
+                    analysis_results.append(voice_result)
+            
+            # Analyze text if provided
+            if text:
+                text_analyzer = get_backup_text_analyzer()
+                if text_analyzer.is_available():
+                    text_result = text_analyzer.analyze_text(text, language)
+                    text_result['modality'] = 'text'
+                    analysis_results.append(text_result)
+            
+            # Analyze face if provided
+            if image_base64:
+                face_analyzer = get_backup_face_analyzer()
+                if face_analyzer.is_available():
+                    face_result = face_analyzer.analyze_face(image_base64, is_base64=True, language=language)
+                    face_result['modality'] = 'face'
+                    analysis_results.append(face_result)
+            
+            if not analysis_results:
+                return jsonify({'error': 'No analyses could be performed'}), 500
+            
+            # Detect conflicts and emotional masking
+            conflict_detected, masking_analysis = detect_emotional_conflict(analysis_results)
+            
+            # Add conflict detection to each result
+            for result in analysis_results:
+                result['conflict_detected'] = conflict_detected
+                result['masking_analysis'] = masking_analysis
+            
+            # Store multimodal analysis in database
+            if db.is_connected():
+                try:
+                    multimodal_data = {
+                        'session_id': f"multimodal_{datetime.utcnow().timestamp()}",
+                        'analysis_type': 'multimodal',
+                        'modalities': [r.get('modality') for r in analysis_results],
+                        'results': analysis_results,
+                        'conflict_detected': conflict_detected,
+                        'masking_analysis': masking_analysis,
+                        'language': language,
+                        'processing_time': 0.0,
+                        'metadata': {
+                            'multimodal_analysis': True,
+                            'num_modalities': len(analysis_results)
+                        }
+                    }
+                    
+                    analysis_id = db.store_multimodal_analysis(user_id, multimodal_data)
+                    for result in analysis_results:
+                        result['analysis_id'] = analysis_id
+                        result['stored'] = True
+                    logger.info(f"Multimodal analysis stored: {analysis_id}")
+                except Exception as store_error:
+                    logger.error(f"Failed to store multimodal analysis: {str(store_error)}")
+                    for result in analysis_results:
+                        result['stored'] = False
+                        result['storage_error'] = str(store_error)
+            
+            return jsonify({
+                'success': True,
+                'conflict_detected': conflict_detected,
+                'masking_analysis': masking_analysis,
+                'analyses': analysis_results,
+                'num_modalities': len(analysis_results)
+            }), 200
+            
+        except Exception as e:
+            logger.error(f"Multimodal analysis error: {str(e)}")
+            return jsonify({'error': 'Multimodal analysis failed'}), 500
 
     # ==========================================================
     # ANALYSIS STORAGE AND HISTORY ENDPOINTS

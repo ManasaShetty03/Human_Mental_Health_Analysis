@@ -131,60 +131,64 @@ export default function History({ userId }: HistoryProps) {
 
   return (
     <div className="space-y-6">
+
       {/* Statistics Overview */}
       {statistics && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-200 border-blue-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Analyses</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-blue-900">Total Analyses</CardTitle>
+              <TrendingUp className="h-4 w-4 text-blue-700" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{statistics.total_analyses}</div>
-              <p className="text-xs text-muted-foreground">All time analyses</p>
+              <div className="text-2xl font-bold text-blue-800">{statistics.total_analyses}</div>
+              <p className="text-xs text-blue-600">All time analyses</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-200 border-blue-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Confidence</CardTitle>
-              <Brain className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-blue-900">Top Emotion</CardTitle>
+              <Brain className="h-4 w-4 text-blue-700" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {(statistics.average_confidence * 100).toFixed(1)}%
+              <div className="text-2xl font-bold text-blue-800">
+                {Object.keys(statistics.emotion_distribution).length > 0 
+                  ? Object.entries(statistics.emotion_distribution).sort(([,a], [,b]) => b - a)[0][0]
+                  : 'N/A'
+                }
               </div>
-              <Progress value={statistics.average_confidence * 100} className="mt-2" />
+              <p className="text-xs text-blue-600">Most frequent</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-200 border-blue-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">High Severity</CardTitle>
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-blue-900">High Severity</CardTitle>
+              <AlertCircle className="h-4 w-4 text-blue-700" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">
+              <div className="text-2xl font-bold text-blue-800">
                 {statistics.severity_distribution.High || 0}
               </div>
-              <p className="text-xs text-muted-foreground">Need attention</p>
+              <p className="text-xs text-blue-600">Need attention</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-200 border-blue-300">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Most Common</CardTitle>
-              <Brain className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium text-blue-900">Most Common</CardTitle>
+              <Brain className="h-4 w-4 text-blue-700" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-blue-800">
                 {Object.keys(statistics.emotion_distribution).length > 0 
                   ? Object.entries(statistics.emotion_distribution)
                       .sort(([,a], [,b]) => b - a)[0][0]
                   : 'N/A'
                 }
               </div>
-              <p className="text-xs text-muted-foreground">Emotion</p>
+              <p className="text-xs text-blue-600">Emotion</p>
             </CardContent>
           </Card>
         </div>
@@ -229,7 +233,7 @@ export default function History({ userId }: HistoryProps) {
                             <div className={`w-3 h-3 rounded-full ${getEmotionColor(analysis.emotion)}`}></div>
                             <div>
                               <div className="font-medium">{analysis.emotion}</div>
-                              <div className="text-sm text-muted-foreground">
+                              <div className="text-sm text-blue-600/70">
                                 {analysis.modality} • {formatDate(analysis.timestamp)}
                               </div>
                             </div>
@@ -243,9 +247,6 @@ export default function History({ userId }: HistoryProps) {
                         </div>
                         
                         <div className="mt-3 flex items-center justify-between">
-                          <div className="text-sm text-muted-foreground">
-                            Confidence: {(analysis.confidence * 100).toFixed(1)}%
-                          </div>
                           {analysis.is_backup && (
                             <Badge variant="secondary" className="text-xs">
                               Backup Model
@@ -262,35 +263,25 @@ export default function History({ userId }: HistoryProps) {
             {/* Selected Analysis Details */}
             <div className="lg:col-span-1">
               {selectedAnalysis ? (
-                <Card>
+                <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
                   <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
+                    <CardTitle className="flex items-center space-x-2 text-blue-900">
                       {getModalityIcon(selectedAnalysis.modality)}
                       <span>Analysis Details</span>
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Emotion</label>
+                      <label className="text-sm font-medium text-blue-800">Emotion</label>
                       <div className="flex items-center space-x-2 mt-1">
                         <div className={`w-4 h-4 rounded-full ${getEmotionColor(selectedAnalysis.emotion)}`}></div>
-                        <span className="font-medium">{selectedAnalysis.emotion}</span>
+                        <span className="font-medium text-blue-900">{selectedAnalysis.emotion}</span>
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium text-gray-700">Mental State</label>
-                      <p className="mt-1">{selectedAnalysis.mental_state}</p>
-                    </div>
-
-                    <div>
-                      <label className="text-sm font-medium text-gray-700">Confidence</label>
-                      <div className="mt-1">
-                        <Progress value={selectedAnalysis.confidence * 100} className="h-2" />
-                        <span className="text-sm text-gray-600">
-                          {(selectedAnalysis.confidence * 100).toFixed(1)}%
-                        </span>
-                      </div>
+                      <label className="text-sm font-medium text-blue-800">Mental State</label>
+                      <p className="mt-1 text-blue-900/80">{selectedAnalysis.mental_state}</p>
                     </div>
 
                     <div>

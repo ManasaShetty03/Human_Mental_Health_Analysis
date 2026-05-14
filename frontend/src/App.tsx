@@ -216,7 +216,7 @@ const getModalityIcon = (modality: string) => {
 
 function AppContent() {
   const { t, i18n } = useTranslation();
-  const { user } = useUser();
+  const { user, setUser } = useUser();
 
   const resourceData = {
     books: [
@@ -1637,6 +1637,22 @@ function AppContent() {
                 <History className="w-5 h-5" />
                 <span className="font-medium">History</span>
               </motion.button>
+              
+              <div className="pt-6 mt-4 border-t border-white/10">
+                <motion.button
+                  whileHover={{ scale: 1.02, x: 4 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    setUser(null);
+                    setPage('landing');
+                    setIsSidebarOpen(false);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-white/80 hover:text-white hover:bg-white/10 hover:bg-red-500/20 text-red-300 hover:text-red-200 transition-all"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span className="font-medium">Logout</span>
+                </motion.button>
+              </div>
             </div>
           </Sidebar>
         </>
